@@ -32,12 +32,14 @@ class MultipleChoice(nn.Module):
         self.encoder = str2encoder[args.encoder](args)
         self.dropout = nn.Dropout(args.dropout)
         self.output_layer = nn.Linear(args.hidden_size, 1)
+        self.nll_loss = nn.NLLLoss()
+        self.logSoftmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, src, tgt, seg, soft_tgt=None):
         """
         Args:
-            src: [batch_size x choices_num x seq_length]
-            tgt: [batch_size]
+            src: [batch_size x choices_num x seq_length] | 选项 + 问题 + 背景
+            tgt: [batch_size] | 0, 1, 2, 3, 答案 序号
             seg: [batch_size x choices_num x seq_length]
         """
 
@@ -52,10 +54,12 @@ class MultipleChoice(nn.Module):
         output = self.encoder(emb, seg)
         output = self.dropout(output)
         logits = self.output_layer(output[:, 0, :])
-        reshaped_logits = logits.view(-1, choices_num)
+        reshaped_logits = logits.view(-1, choices_num) # [batch_size x choices_num]
 
         if tgt is not None:
-            loss = nn.NLLLoss()(nn.LogSoftmax(dim=-1)(reshaped_logits), tgt.view(-1))
+            tgt = tgt.view(-1)  # [batch_size]
+            _reshaped_logits = self.logSoftmax(reshaped_logits)
+            loss = self.nll_loss(_reshaped_logits, tgt)
             return loss, reshaped_logits
         else:
             return None, reshaped_logits
@@ -78,13 +82,13 @@ def read_dataset(args, path):
             example += [data[i][1][j].get("answer", "").lower()]
 
             examples += [example]
-
+    # example[0背景，1问题，2选项1， 3选项2， 4选项3， 5选项4，6答案
     dataset = []
     for i, example in enumerate(examples):
         tgt = 0
         for k in range(args.max_choices_num):
             if example[2 + k] == example[6]:
-                tgt = k
+                tgt = k # 序号 0,1,2,3
         dataset.append(([], tgt, []))
 
         for k in range(args.max_choices_num):
@@ -93,6 +97,7 @@ def read_dataset(args, path):
             src_b = args.tokenizer.convert_tokens_to_ids(args.tokenizer.tokenize(example[1]) + [SEP_TOKEN])
             src_c = args.tokenizer.convert_tokens_to_ids(args.tokenizer.tokenize(example[0]) + [SEP_TOKEN])
 
+            #   CLS选项SEP + 问题SEP + 背景SEP | 背景 相对来说 不重要, 可以删除，因此，后在后面
             src = src_a + src_b + src_c
             seg = [1] * (len(src_a) + len(src_b)) + [2] * len(src_c)
 
