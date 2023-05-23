@@ -7,7 +7,7 @@ class PositionwiseFeedForward(nn.Module):
         super(PositionwiseFeedForward, self).__init__()
         self.linear_1 = nn.Linear(hidden_size, feedforward_size, bias=has_bias)
         self.linear_2 = nn.Linear(feedforward_size, hidden_size, bias=has_bias)
-        self.act = str2act[hidden_act]
+        self.act = str2act[hidden_act]  # 激活 函数
 
     def forward(self, x):
         inter = self.act(self.linear_1(x))

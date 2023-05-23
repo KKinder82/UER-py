@@ -23,6 +23,7 @@ class ClsTarget(nn.Module):
         Args:
             memory_bank: [batch_size x seq_length x hidden_size]
             tgt: [batch_size]
+            seg: [batch_size x seq_length]
 
         Returns:
             loss: Classification loss.
@@ -30,10 +31,12 @@ class ClsTarget(nn.Module):
         """
 
         output = pooling(memory_bank, seg, self.pooling_type)
-        output = torch.tanh(self.linear_1(output))
+        output = self.linear_1(output)
+        output = torch.tanh(output)
         logits = self.linear_2(output)
 
         loss = self.criterion(self.softmax(logits), tgt)
-        correct = self.softmax(logits).argmax(dim=-1).eq(tgt).sum()
+        _softmax = self.softmax(logits)
+        correct = _softmax.argmax(dim=-1).eq(tgt).sum()
 
         return loss, correct

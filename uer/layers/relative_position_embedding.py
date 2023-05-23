@@ -27,9 +27,18 @@ class RelativePositionEmbedding(nn.Module):
         query_length = encoder_hidden.size()[1]
         key_length = decoder_hidden.size()[1]
 
+        # context_position = (query_length|0,1,2,3,4,5...query_length-1, 1)
         context_position = torch.arange(query_length, dtype=torch.long)[:, None]
+        # memory_position = (1, key_length|0,1,2,3,4,5...key_length)
         memory_position = torch.arange(key_length, dtype=torch.long)[None, :]
+        # relative_position = (query_length, key_length)
+        # tensor([[ 0, -1, -2, -3, -4],
+        #         [ 1,  0, -1, -2, -3],
+        #         [ 2,  1,  0, -1, -2],
+        #         [ 3,  2,  1,  0, -1],
+        #         [ 4,  3,  2,  1,  0]])
         relative_position = memory_position - context_position  # shape (query_length, key_length)
+        # relative_position_bucket = (query_length, key_length)
         relative_position_bucket = self.relative_position_bucket(
             relative_position,  # shape (query_length, key_length)
             bidirectional=self.bidirectional,
@@ -52,7 +61,7 @@ class RelativePositionEmbedding(nn.Module):
         positions >=max_distance map to the same bucket. All relative positions <=-max_distance map to the same bucket.
         This should allow for more graceful generalization to longer sequences than the model has been trained on
         Args:
-            relative_position: an int32 Tensor
+            relative_position: an int32 Tensor  | shape (query_length, key_length)
             bidirectional: a boolean - whether the attention is bidirectional
             num_buckets: an integer
             max_distance: an integer
@@ -62,9 +71,13 @@ class RelativePositionEmbedding(nn.Module):
         relative_buckets = 0
         if bidirectional:
             num_buckets //= 2
+            # * 3 =>  每个元素的值  * 3
+            # 位置 > 0 填为 num_buckets, 否则上为 0
             relative_buckets += (relative_position > 0).to(torch.long) * num_buckets
+            # 将位置 < 0 的位置填为 取反的值， 其他位置为 0
             relative_position = torch.abs(relative_position)
         else:
+            # 将位置 < 0 的位置填为 取反的值， 其他位置为 0
             relative_position = -torch.min(relative_position, torch.zeros_like(relative_position))
         # now relative_position is in the range [0, inf)
 

@@ -8,6 +8,7 @@ import json
 import random
 import torch
 import torch.nn as nn
+import json
 
 uer_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(uer_dir)
@@ -24,7 +25,10 @@ from uer.model_saver import save_model
 from uer.opts import finetune_opts, tokenizer_opts, adv_opts
 from finetune.run_classifier import build_optimizer, load_or_initialize_parameters, train_model, batch_loader, evaluate
 
+from kk.utils import *
 
+
+# 选题题
 class MultipleChoice(nn.Module):
     def __init__(self, args):
         super(MultipleChoice, self).__init__()
@@ -104,6 +108,8 @@ def read_dataset(args, path):
             if len(src) > args.seq_length:
                 src = src[: args.seq_length]
                 seg = seg[: args.seq_length]
+
+            # Fill Padding
             PAD_ID = args.tokenizer.convert_tokens_to_ids([PAD_TOKEN])[0]
             while len(src) < args.seq_length:
                 src.append(PAD_ID)
@@ -118,6 +124,13 @@ def read_dataset(args, path):
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument("--args_path", default="finetune/run_c3.txt", type=str, help="config use file" )
+
+    args = parser.parse_args()
+    config_args = None
+    if args.args_path:
+        config_args = load_argsconfig(args.args_path)
+
     finetune_opts(parser)
 
     parser.add_argument("--max_choices_num", default=4, type=int,
@@ -127,7 +140,9 @@ def main():
 
     adv_opts(parser)
 
-    args = parser.parse_args()
+    # 分析参数
+    args = parser.parse_args(args=config_args)
+
     args.labels_num = args.max_choices_num
 
     # Load the hyperparameters from the config file.
@@ -151,6 +166,11 @@ def main():
     model = model.to(args.device)
 
     # Training phase.
+    # trainset [topic_infos|试题信息, answer_index|答案,  segs|分段]
+    #   topic_infos: (batch * 最大选项个数, sentence_length) | [选项 + 问题 + 背景]
+    #   answer_index: (batch ,) | 答案序号 | 0, 1, 2, 3
+    #   segs: (batch * 最大选项个数, sentence_length) | 1,1,1, 2,2,2
+
     trainset = read_dataset(args, args.train_path)
     instances_num = len(trainset)
     batch_size = args.batch_size

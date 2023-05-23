@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-
+# Sentance Prediction Target
 class SpTarget(nn.Module):
 
     def __init__(self, args, vocab_size):
@@ -23,9 +23,12 @@ class SpTarget(nn.Module):
             loss_sop: Sentence order prediction loss.
             correct_sop: Number of sentences that are predicted correctly.
         """
-        output_sp = torch.tanh(self.sp_linear_1(memory_bank[:, 0, :]))
+        memory_bank = memory_bank[:, 0, :]  #取出第 0 个位置的特征
+        output_sp = self.sp_linear_1(memory_bank)
+        output_sp = torch.tanh(output_sp)
         output_sp = self.sp_linear_2(output_sp)
         loss_sp = self.criterion(self.softmax(output_sp), tgt)
-        correct_sp = self.softmax(output_sp).argmax(dim=-1).eq(tgt).sum()
+        _softmax = self.softmax(output_sp)
+        correct_sp = _softmax.argmax(dim=-1).eq(tgt).sum()
 
         return loss_sp, correct_sp

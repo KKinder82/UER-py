@@ -1,0 +1,7 @@
+--pretrained_mode_path models/google_model.bin
+--vocab_path models/google_vocab.txt
+--config_path models/bert/base_config.json
+--train_path datasets/c3/train.json
+--dev_path datasets/c3/dev.json
+--test_path datasets/c3/test.json
+

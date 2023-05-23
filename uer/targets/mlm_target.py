@@ -15,6 +15,8 @@ class MlmTarget(nn.Module):
         self.vocab_size = vocab_size
         self.hidden_size = args.hidden_size
         self.emb_size = args.emb_size
+        # Bool : 是否使用 factorized embedding parameterization | 因子化嵌入参数化
+        # 用于降低参数化 embedding 的复杂度
         self.factorized_embedding_parameterization = args.factorized_embedding_parameterization
         self.act = str2act[args.hidden_act]
 
@@ -31,14 +33,19 @@ class MlmTarget(nn.Module):
 
         self.criterion = nn.NLLLoss()
 
+    # memory_bank : (batch, seq_len, hidden_size)
+    # tgt_mlm : (batch, 1|target)
     def mlm(self, memory_bank, tgt_mlm):
         # Masked language modeling (MLM) with full softmax prediction.
-        output_mlm = self.act(self.mlm_linear_1(memory_bank))
+        output_mlm = self.mlm_linear_1(memory_bank)
+        output_mlm = self.act(output_mlm)
         output_mlm = self.layer_norm(output_mlm)
         if self.factorized_embedding_parameterization:
             output_mlm = output_mlm.contiguous().view(-1, self.emb_size)
         else:
             output_mlm = output_mlm.contiguous().view(-1, self.hidden_size)
+
+        # 第二次 线性层
         tgt_mlm = tgt_mlm.contiguous().view(-1)
         output_mlm = output_mlm[tgt_mlm > 0, :]
         tgt_mlm = tgt_mlm[tgt_mlm > 0]

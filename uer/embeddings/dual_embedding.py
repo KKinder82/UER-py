@@ -2,7 +2,6 @@ from argparse import Namespace
 import torch.nn as nn
 import copy
 
-
 class DualEmbedding(nn.Module):
     """
     """

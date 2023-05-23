@@ -145,11 +145,11 @@ def tokenizer_opts(parser):
     parser.add_argument("--merges_path", default=None, type=str,
                         help="Path of the merges file.")
     parser.add_argument("--spm_model_path", default=None, type=str,
-                        help="Path of the sentence piece model.")
+                        help="Path of the sentence piece model.  ")
     parser.add_argument("--do_lower_case", choices=["true", "false"], default="true",
                         help="Whether to lower case the input")
 
-
+# 目标语言健忘器
 def tgt_tokenizer_opts(parser):
     parser.add_argument("--tgt_tokenizer", choices=["bert", "bpe", "char", "space", "xlmroberta"], default="bert",
                         help="Specify the tokenizer for target side.")

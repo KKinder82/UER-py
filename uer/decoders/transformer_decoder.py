@@ -43,6 +43,7 @@ class TransformerDecoder(nn.Module):
         Args:
             memory_bank: [batch_size x seq_length x emb_size]
             emb: [batch_size x seq_length x emb_size]
+            additional_info : []
         Returns:
             hidden: [batch_size x seq_length x hidden_size]
         """

@@ -12,7 +12,7 @@ class TransformerLayer(nn.Module):
     """
     def __init__(self, args):
         super(TransformerLayer, self).__init__()
-
+        # 层归一化的位置：post：之前归一化，否则之后归一化
         self.layernorm_positioning = args.layernorm_positioning
 
         if hasattr(args, "attention_head_size"):
@@ -20,8 +20,8 @@ class TransformerLayer(nn.Module):
         else:
             attention_head_size = args.hidden_size // args.heads_num
 
-        has_bias = bool(1 - args.remove_transformer_bias)
-        with_scale = bool(1 - args.remove_attention_scale)
+        has_bias = bool(1 - args.remove_transformer_bias)   # 默认，含有 bias
+        with_scale = bool(1 - args.remove_attention_scale)  # 默认，含有 scale
 
         # Multi-headed self-attention.
         self.self_attn = MultiHeadedAttention(
@@ -73,10 +73,12 @@ class TransformerLayer(nn.Module):
         return output, prev_attn_out
 
 
+# Transformer 解码 Layer
 class TransformerDecoderLayer(nn.Module):
     def __init__(self, args):
         super(TransformerDecoderLayer, self).__init__()
 
+        # 层归一化的位置： post : 在Drop 之后， 否则 ：之前
         self.layernorm_positioning = args.layernorm_positioning
 
         if hasattr(args, "attention_head_size"):
@@ -110,7 +112,7 @@ class TransformerDecoderLayer(nn.Module):
             )
         self.dropout_3 = nn.Dropout(args.dropout)
 
-        # Layer Normalization
+        # Layer Normalization | 层归一化
         if args.layernorm == "t5":
             self.layer_norm_1 = T5LayerNorm(args.hidden_size)
             self.layer_norm_2 = T5LayerNorm(args.hidden_size)
@@ -137,6 +139,7 @@ class TransformerDecoderLayer(nn.Module):
             query, _ = self.self_attn(hidden, hidden, hidden, mask_decoder, self_position_bias)
             query = self.dropout_1(query)
             query_norm = self.layer_norm_1(query + hidden)
+            # key, value, query, mask, position_bias=None, has_residual_attention=False, prev_attn=None
             mid, _ = self.context_attn(encoder_hidden, encoder_hidden, query_norm, mask_encoder, context_position_bias)
             mid = self.dropout_2(mid)
             mid_norm = self.layer_norm_2(mid + query_norm)

@@ -33,7 +33,7 @@ class Tokenizer(object):
         else:
             self.vocab = Vocab()
             self.vocab.load(vocab_path, is_quiet=True)
-            self.vocab = self.vocab.w2i
+            self.vocab = self.vocab.w2i     # 词到索引  可要根据  word -> index
         self.inv_vocab = {v: k for k, v in self.vocab.items()}
 
     def tokenize(self, text):
@@ -79,7 +79,7 @@ class SpaceTokenizer(Tokenizer):
 
 SPIECE_UNDERLINE = u"▁".encode("utf-8")
 
-
+#
 def preprocess_text(inputs, remove_space=True, lower=False):
     """preprocess data by removing extra space and normalize data."""
     outputs = inputs
@@ -269,6 +269,7 @@ class BertTokenizer(Tokenizer):
         return split_tokens
 
 
+# BPETokenizer 是一种基于字节对编码（Byte Pair Encoding，BPE）算法的分词器，用于将文本拆分成子词或分词单元。
 class BPETokenizer(Tokenizer):
     def __init__(self, args, is_src=True):
         super().__init__(args, is_src)
@@ -335,7 +336,6 @@ class BPETokenizer(Tokenizer):
             )  # Maps all our bytes to unicode strings, avoiding control tokens of the BPE (spaces in our case)
             bpe_tokens.extend(bpe_token for bpe_token in self.bpe(token).split(" "))
         return bpe_tokens
-
 
 class XLMRobertaTokenizer(Tokenizer):
     """Runs end-to-end tokenziation."""

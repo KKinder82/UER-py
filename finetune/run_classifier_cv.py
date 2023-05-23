@@ -1,5 +1,5 @@
 """
-This script provides an example to wrap UER-py for classification with cross validation.
+This script provides an example to wrap UER-py for classification with crosscross validation.
 """
 import sys
 import os
@@ -52,7 +52,7 @@ def main():
     # Training options.
     training_opts(parser)
 
-    # Cross validation options.
+    # Cross validation options. 交叉验证的 折数
     parser.add_argument("--folds_num", type=int, default=5,
                         help="The number of folds for cross validation.")
 

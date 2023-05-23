@@ -19,8 +19,11 @@ def flip(x, dim):
                                 dtype=torch.long, device=x.device)
     return x[tuple(indices)]
 
-
+# todo: pooling 函数 不知道是什么意思
+# memory_bank ： [batch_size x seq_length x hidden_size]
+# seg: [batch_size x seq_length] | （0|1) 分段
 def pooling(memory_bank, seg, pooling_type):
+    # 增加一维
     seg = torch.unsqueeze(seg, dim=-1).type_as(memory_bank)
     memory_bank = memory_bank * seg
     if pooling_type == "mean":

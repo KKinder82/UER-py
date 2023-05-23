@@ -13,7 +13,7 @@ class BilmTarget(LmTarget):
     def forward(self, memory_bank, tgt, seg):
         """
         Args:
-            memory_bank: [batch_size x seq_length x hidden_size]
+            memory_bank: [batch_size x seq_length x 2*hidden_size]
             tgt: [batch_size x seq_length]
 
         Returns:

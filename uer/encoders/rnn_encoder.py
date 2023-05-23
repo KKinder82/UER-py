@@ -10,6 +10,7 @@ class RnnEncoder(nn.Module):
     def __init__(self, args):
         super(RnnEncoder, self).__init__()
 
+        # 是否 双向
         self.bidirectional = args.bidirectional
         if self.bidirectional:
             assert args.hidden_size % 2 == 0
@@ -34,8 +35,10 @@ class RnnEncoder(nn.Module):
         output = self.drop(output)
         return output
 
+    # <- args.layers_num, batch_size, self.hidden_size
     def init_hidden(self, batch_size, device):
         if self.bidirectional:
+            # <- self.layers_num*2, batch_size, self.hidden_size
             return torch.zeros(self.layers_num*2, batch_size, self.hidden_size, device=device)
         else:
             return torch.zeros(self.layers_num, batch_size, self.hidden_size, device=device)

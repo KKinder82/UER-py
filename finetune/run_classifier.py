@@ -157,6 +157,8 @@ def read_dataset(args, path):
             if len(src) > args.seq_length:
                 src = src[: args.seq_length]
                 seg = seg[: args.seq_length]
+
+            # Fill PAD
             PAD_ID = args.tokenizer.convert_tokens_to_ids([PAD_TOKEN])[0]
             while len(src) < args.seq_length:
                 src.append(PAD_ID)
@@ -179,6 +181,7 @@ def train_model(args, model, optimizer, scheduler, src_batch, tgt_batch, seg_bat
         soft_tgt_batch = soft_tgt_batch.to(args.device)
 
     loss, _ = model(src_batch, tgt_batch, seg_batch, soft_tgt_batch)
+
     if torch.cuda.device_count() > 1:
         loss = torch.mean(loss)
 
