@@ -12,8 +12,5 @@ class KKTokenizer(Tokenizer):
             raise ValueError("Please specify a vocabulary file path by --spm_model_path.")
 
     def tokenize(self, text):
-        if self.sample:
-            return self.sp_model.SampleEncodeAsPieces(text, 64)
-        else:
-            return self.sp_model.EncodeAsPieces(text)
+        return self.sp_model.SampleEncodeAsPieces(text, 64)
 
