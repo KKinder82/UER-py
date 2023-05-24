@@ -15,4 +15,4 @@
 --encoder transformer
 --decoder transformer
 --dropout 0.01
---full_connection
+
