@@ -4,8 +4,8 @@
 --train_path datasets/c3/train.json
 --dev_path datasets/c3/dev.json
 --test_path datasets/c3/test.json
---tokenizer bert
-#--spm_model_path models/google_zh_vocab.model
+--tokenizer kk
+--spm_model_path E:\Data\AiModel\chatglm-6b\ice_text.model
 --vocab_path models/google_zh_vocab.txt
 --epochs_num 8
 --batch_size 8
