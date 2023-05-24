@@ -34,6 +34,7 @@ class Tokenizer(object):
             self.vocab = Vocab()
             self.vocab.load(vocab_path, is_quiet=True)
             self.vocab = self.vocab.w2i     # 词到索引  可要根据  word -> index
+        # index -> word
         self.inv_vocab = {v: k for k, v in self.vocab.items()}
 
     def tokenize(self, text):

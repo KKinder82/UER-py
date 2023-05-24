@@ -6,10 +6,37 @@ import argparse
 from argparse import Namespace
 from uer.layers.CrossLayers import CrossVector
 from kk.utils import *
+import sentencepiece as spm
+import random
 # from finetune.run_c3 import MultipleChoice
 
 
+
 def main():
+    sp_model = spm.SentencePieceProcessor()
+    sp_model.Load(r"E:\Data\AiModel\chatglm-6b\ice_text.model")
+    a = sp_model.EncodeAsPieces("中国人民解放军是一支战无不胜的队伍")
+    print(a)
+
+    a = sp_model.SampleEncodeAsPieces("中国人民解放军是一支战无不胜的队伍", 64)
+    print(a)
+
+    exit()
+
+    x = torch.arange(3, 18).float().reshape(-1, 5)
+    print(x)
+    x[:, 2] = 100
+    x1 = nn.Softmax(dim=-1)(x)
+    print(x1)
+    x1 = torch.log(x1)
+    print(x1)
+    x = nn.LogSoftmax(dim=-1)(x)
+    print(x)
+    y = torch.tensor([1,2,1])
+    loss = nn.NLLLoss()(x, y)
+    print(loss)
+    exit()
+
     args = load_argsconfig("test.txt")
     print(args)
 
@@ -19,8 +46,6 @@ def main():
     print(args)
 
     exit()
-
-
 
     # parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # args = parser.parse_args()
@@ -165,8 +190,6 @@ def main():
     t = dict(zip( cs, ds))
     print(t)
     exit(0)
-
-    import sentencepiece as spm
 
     # 加载 SentencePiece 模型
     spm_model_path = "path/to/your/spm_model.model"

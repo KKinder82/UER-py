@@ -4,4 +4,5 @@
 --train_path datasets/c3/train.json
 --dev_path datasets/c3/dev.json
 --test_path datasets/c3/test.json
+--fp16
 

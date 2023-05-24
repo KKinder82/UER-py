@@ -3,10 +3,11 @@ from uer.utils.dataloader import *
 from uer.utils.act_fun import *
 from uer.utils.optimizers import *
 from uer.utils.adversarial import *
+from kk.kk_tokenizers import KKTokenizer
 
 
 str2tokenizer = {"char": CharTokenizer, "space": SpaceTokenizer, "bert": BertTokenizer,
-                 "bpe": BPETokenizer, "xlmroberta": XLMRobertaTokenizer}
+                 "bpe": BPETokenizer, "xlmroberta": XLMRobertaTokenizer, "kk":KKTokenizer}
 str2dataset = {"bert": BertDataset, "lm": LmDataset, "mlm": MlmDataset,
                "bilm": BilmDataset, "albert": AlbertDataset, "mt": MtDataset,
                "t5": T5Dataset, "gsg": GsgDataset, "bart": BartDataset,

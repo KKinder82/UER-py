@@ -1,10 +1,18 @@
 --pretrained_model_path D:\aidata\google_model.bin
---vocab_path models/google_zh_vocab.txt
+--output_model_path models/finetuned_model.bin"
 --config_path models/bert/base_config.json
 --train_path datasets/c3/train.json
 --dev_path datasets/c3/dev.json
 --test_path datasets/c3/test.json
+--tokenizer bert
+#--spm_model_path models/google_zh_vocab.model
+--vocab_path models/google_zh_vocab.txt
 --epochs_num 8
 --batch_size 8
 --seq_length 512
 --max_choices_num 4
+--embedding word_pos_seg
+--encoder transformer
+--decoder transformer
+--dropout 0.01
+--full_connection
