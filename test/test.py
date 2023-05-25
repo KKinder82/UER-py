@@ -7,20 +7,32 @@ from argparse import Namespace
 from uer.layers.CrossLayers import CrossVector
 from kk.utils import *
 import sentencepiece as spm
+from uer.utils.tokenizers import *
 import random
 # from finetune.run_c3 import MultipleChoice
 
 
-
 def main():
-    sp_model = spm.SentencePieceProcessor()
+    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": ""}
+    args = Namespace(**args)
+    token = KKTokenizer(args)
+    input = "中国人民解放军是一支战无不胜的队伍[MASK]"
+    out = token.tokenize(input)
+    print(out)
+    out = token.convert_tokens_to_ids(out)
+    print(out)
+    exit()
+
+    sp_model = spm.SentencePieceProcessor(args)
+
     sp_model.Load(r"E:\Data\AiModel\chatglm-6b\ice_text.model")
-    a = sp_model.EncodeAsPieces("中国人民解放军是一支战无不胜的队伍")
-    print(a)
+    a = sp_model.EncodeAsPieces("<pad>中国人民解放军是一支战无不胜的队伍")
+    pad_str = sp_model.IdToPiece(sp_model.pad_id())
+    print(pad_str)
 
-    a = sp_model.SampleEncodeAsPieces("中国人民解放军是一支战无不胜的队伍", 64)
-    print(a)
-
+    # with open("d:/icon_text_vocab.txt", "w", encoding="utf-8") as f:
+    #     for i in vocab:
+    #         f.write(i + "\n")
     exit()
 
     x = torch.arange(3, 18).float().reshape(-1, 5)

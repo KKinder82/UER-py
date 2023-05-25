@@ -42,8 +42,7 @@ class Tokenizer(object):
 
     def convert_tokens_to_ids(self, tokens):
         if self.sp_model:
-            return [self.sp_model.PieceToId(
-                    printable_text(token)) for token in tokens]
+            return [self.sp_model.PieceToId(printable_text(token)) for token in tokens]
         else:
             return convert_by_vocab(self.vocab, tokens)
 
@@ -579,3 +578,85 @@ def _is_punctuation(char):
     if cat.startswith("P"):
         return True
     return False
+
+
+class KKTokenizer(Tokenizer):
+    """
+    """
+    SPEC_TOKENS = [UNK_TOKEN, CLS_TOKEN, SEP_TOKEN, MASK_TOKEN, PAD_TOKEN]
+
+    def __init__(self, args, is_src=True, special_tokens=None):
+        super().__init__(args, is_src)
+        if not args.spm_model_path:
+            raise ValueError("Please specify a vocabulary file path by --spm_model_path.")
+        # self.sp_model
+        _len = self.sp_model.vocab_size()
+        self.spec_token_ids = {UNK_TOKEN: _len,
+                               CLS_TOKEN: _len + 1,
+                               SEP_TOKEN: _len + 2,
+                               MASK_TOKEN: _len + 3,
+                               PAD_TOKEN: _len + 4}
+        self.spec_ids = [t_id for (token, t_id) in self.spec_token_ids.items()]
+        self.spec_token_ids_inv = {t_id: token for token,t_id in self.spec_token_ids.items()}
+
+    def _splited_textList(self, textList, splitter):
+        _newList: list = []
+        for itext in textList:
+            if (itext in KKTokenizer.SPEC_TOKENS):
+                _newList.append(itext)
+                continue
+            if itext == "":
+                continue
+            _list = itext.split(splitter)
+            _first = True
+            for _item in _list:
+                if _first:
+                    _first = False
+                else:
+                    _newList.append(splitter)
+                if _item == "":
+                    continue
+                _newList.append(_item)
+        return _newList
+
+    def _splited_textList2(self, textList, splitters):
+        for ispliter in splitters:
+            textList = self._splited_textList(textList, ispliter)
+        return textList
+
+    def tokenize(self, text):
+        split_list = [text]
+        split_list = self._splited_textList2(split_list, KKTokenizer.SPEC_TOKENS)
+        _tokens = []
+        for itext in split_list:
+            if itext in KKTokenizer.SPEC_TOKENS:
+                _tokens += [itext]
+                continue
+            if itext == "":
+                continue
+            _tokens += self.sp_model.EncodeAsPieces(itext)
+        return _tokens
+
+    def convert_tokens_to_ids(self, tokens):
+        ids = []
+        for itoken in tokens:
+            if itoken in KKTokenizer.SPEC_TOKENS:
+                _id = self.spec_token_ids[itoken]
+                ids.append(_id)
+            else:
+                itoken = printable_text(itoken)
+                _id = self.sp_model.PieceToId(itoken)
+                ids.append(_id)
+        return ids
+
+    def convert_ids_to_tokens(self, ids):
+        tokens = []
+        for iid in ids:
+            if iid in self.spec_ids:
+                _token = self.spec_token_ids_inv[iid]
+                tokens.append(_token)
+            else:
+                _token = self.sp_model.IdToPiece(iid)
+                tokens.append(_token)
+        return tokens
+

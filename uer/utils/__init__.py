@@ -3,7 +3,7 @@ from uer.utils.dataloader import *
 from uer.utils.act_fun import *
 from uer.utils.optimizers import *
 from uer.utils.adversarial import *
-from kk.kk_tokenizers import KKTokenizer
+#from kk.kk_tokenizers import KKTokenizer
 
 
 str2tokenizer = {"char": CharTokenizer, "space": SpaceTokenizer, "bert": BertTokenizer,

@@ -6,7 +6,8 @@
 --test_path datasets/c3/test.json
 --tokenizer kk
 --spm_model_path /home/rootbr/data/aimodels/chatglm-6b/ice_text.model
---vocab_path models/google_zh_vocab.txt
+--vocab_path models/chatGLM6_vocab.txt
+#--vocab_path models/google_zh_vocab.txt
 --epochs_num 8
 --batch_size 8
 --seq_length 512
