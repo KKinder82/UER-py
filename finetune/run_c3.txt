@@ -11,7 +11,7 @@
 
 --vocab_path models/chatGLM6_vocab.txt
 #--vocab_path models/google_zh_vocab.txt
---epochs_num 8
+--epochs_num 1000
 --batch_size 8
 --seq_length 512
 --max_choices_num 4
