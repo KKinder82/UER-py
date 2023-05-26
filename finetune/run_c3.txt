@@ -5,11 +5,9 @@
 --dev_path datasets/c3/dev.json
 --test_path datasets/c3/test.json
 
---tokenizer bert
-#--tokenizer kk
-
-#--spm_model_path E:\Data\AiModel\chatglm-6b\ice_text.model
-#--spm_model_path /home/rootbr/data/aimodels/chatglm-6b/ice_text.model
+#--tokenizer bert
+--tokenizer kk
+--spm_model_path /home/rootbr/data/aimodels/chatglm-6b/ice_text.model
 
 --vocab_path models/chatGLM6_vocab.txt
 #--vocab_path models/google_zh_vocab.txt
