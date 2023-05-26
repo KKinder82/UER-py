@@ -8,11 +8,10 @@ from uer.utils.misc import count_lines
 class Vocab(object):
     """
     """
-    def __init__(self, specials=[]):
+    def __init__(self):
         self.w2i = {} 
         self.i2w = [] 
         self.w2c = {}
-        self.specials = specials
         self.reserved_vocab_path = \
             os.path.abspath(os.path.join(os.path.dirname(__file__), "../../models/reserved_vocab.txt"))
         
@@ -22,16 +21,18 @@ class Vocab(object):
                 w = line.strip("\r\n").split()[0] if line.strip() else line.strip("\r\n")
                 self.w2i[w] = index
                 self.i2w.append(w)
+        if not is_quiet:
+            print("Vocabulary size: ", len(self))
+
+    def add_vocab(self, vocabs=[]):
         # 增加特殊字符
-        for ispec in self.specials:
+        for ispec in self.vocabs:
             ispec = ispec.strip()
             if ispec in self.w2i:
                 continue
-            index = index + 1
+            index = len(self.w2i)
             self.w2i[ispec] = index
             self.i2w.append(ispec)
-        if not is_quiet:
-            print("Vocabulary size: ", len(self))
 
     def save(self, save_path):
         print("Vocabulary size: ", len(self))

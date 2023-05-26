@@ -18,11 +18,26 @@ def main():
     args = Namespace(**args)
     # token = KKTokenizer(args)
     token = BertTokenizer(args)
-    input = "中国人民解放军是一支战无不胜的队伍[MASK]"
-    out = token.tokenize(input)
+    input = "中国人民解放军是一支战无不胜的队伍"
+    out = token.tokenize(input) + [SEP_TOKEN]
     print(out)
     out = token.convert_tokens_to_ids(out)
     print(out)
+    out = token.convert_ids_to_tokens(out)
+    print(out)
+    print("------------")
+
+    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "", "do_lower_case":True}
+    args = Namespace(**args)
+    token = KKTokenizer(args)
+    input = "中国人民解放军是一支战无不胜的队伍"
+    out = token.tokenize(input) + [SEP_TOKEN]
+    print(out)
+    out = token.convert_tokens_to_ids(out)
+    print(out)
+    out = token.convert_ids_to_tokens(out)
+    print(out)
+
     exit()
 
     a = {"a":"AAA", "b":"BBBB"}
