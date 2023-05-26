@@ -1,5 +1,5 @@
 --pretrained_model_path models/finetuned_model.bin
---output_model_path models/finetuned_model.bin"
+--output_model_path models/finetuned_model.bin
 --config_path models/bert/base_config.json
 --train_path datasets/c3/train.json
 --dev_path datasets/c3/dev.json
