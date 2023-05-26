@@ -189,7 +189,7 @@ def train_model(args, model, optimizer, scheduler, src_batch, tgt_batch, seg_bat
         with args.amp.scale_loss(loss, optimizer) as scaled_loss:
             scaled_loss.backward()
     else:
-        loss.backward()
+        loss.sum().backward()
 
     if args.use_adv and args.adv_type == "fgm":
         args.adv_method.attack(epsilon=args.fgm_epsilon)
