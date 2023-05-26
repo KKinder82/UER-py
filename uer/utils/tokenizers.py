@@ -7,6 +7,7 @@ import unicodedata
 import six
 import regex as re
 
+SPEC_TOKENS = [UNK_TOKEN, CLS_TOKEN, SEP_TOKEN, MASK_TOKEN, PAD_TOKEN]
 
 class Tokenizer(object):
 
@@ -31,7 +32,7 @@ class Tokenizer(object):
             self.vocab = {self.sp_model.IdToPiece(i): i for i
                                         in range(self.sp_model.GetPieceSize())}
         else:
-            self.vocab = Vocab()
+            self.vocab = Vocab(SPEC_TOKENS)
             self.vocab.load(vocab_path, is_quiet=True)
             self.vocab = self.vocab.w2i     # 词到索引  可要根据  word -> index
         # index -> word
@@ -202,7 +203,7 @@ def convert_tokens_to_ids(vocab, tokens):
 def convert_ids_to_tokens(inv_vocab, ids):
     return convert_by_vocab(inv_vocab, ids)
 
-
+# 通过 空格|TAB|ENTER 分词
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
@@ -402,6 +403,7 @@ class BasicTokenizer(object):
         output_tokens = whitespace_tokenize(" ".join(split_tokens))
         return output_tokens
 
+    # 从文本中去除重音符号。
     def _run_strip_accents(self, text):
         """Strips accents from a piece of text."""
         text = unicodedata.normalize("NFD", text)
@@ -413,11 +415,14 @@ class BasicTokenizer(object):
             output.append(char)
         return "".join(output)
 
+    #通过标题符号，将token 分组
     def _run_split_on_punc(self, text):
+        # 处理标点符号
         """Splits punctuation on a piece of text."""
         chars = list(text)
         i = 0
         start_new_word = True
+        # output[",",[“A","B"],",",["C","D"]]
         output = []
         while i < len(chars):
             char = chars[i]
@@ -433,6 +438,7 @@ class BasicTokenizer(object):
 
         return ["".join(x) for x in output]
 
+    # 汉字处理 汉字前后，各加一个 空格
     def _tokenize_chinese_chars(self, text):
         """Adds whitespace around any CJK character."""
         output = []
@@ -564,6 +570,7 @@ def _is_control(char):
     return False
 
 
+# 检查 char 是否为 标点符号
 def _is_punctuation(char):
     """Checks whether `chars` is a punctuation character."""
     cp = ord(char)
@@ -581,9 +588,6 @@ def _is_punctuation(char):
 
 
 class KKTokenizer(Tokenizer):
-    """
-    """
-    SPEC_TOKENS = [UNK_TOKEN, CLS_TOKEN, SEP_TOKEN, MASK_TOKEN, PAD_TOKEN]
 
     def __init__(self, args, is_src=True, special_tokens=None):
         super().__init__(args, is_src)
@@ -602,7 +606,7 @@ class KKTokenizer(Tokenizer):
     def _splited_textList(self, textList, splitter):
         _newList: list = []
         for itext in textList:
-            if (itext in KKTokenizer.SPEC_TOKENS):
+            if (itext in SPEC_TOKENS):
                 _newList.append(itext)
                 continue
             if itext == "":
@@ -626,10 +630,10 @@ class KKTokenizer(Tokenizer):
 
     def tokenize(self, text):
         split_list = [text]
-        split_list = self._splited_textList2(split_list, KKTokenizer.SPEC_TOKENS)
+        split_list = self._splited_textList2(split_list, SPEC_TOKENS)
         _tokens = []
         for itext in split_list:
-            if itext in KKTokenizer.SPEC_TOKENS:
+            if itext in SPEC_TOKENS:
                 _tokens += [itext]
                 continue
             if itext == "":
@@ -640,7 +644,7 @@ class KKTokenizer(Tokenizer):
     def convert_tokens_to_ids(self, tokens):
         ids = []
         for itoken in tokens:
-            if itoken in KKTokenizer.SPEC_TOKENS:
+            if itoken in SPEC_TOKENS:
                 _id = self.spec_token_ids[itoken]
                 ids.append(_id)
             else:

@@ -11,16 +11,25 @@ from uer.utils.tokenizers import *
 import random
 # from finetune.run_c3 import MultipleChoice
 
-
 def main():
-    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": ""}
+    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt"}
+    args = {"spm_model_path": r"", "vocab_path": "models/google_zh_vocab.txt", "do_lower_case":True}
+    args = {"spm_model_path": r"", "vocab_path": "models/chatGLM6_vocab.txt", "do_lower_case":True}
     args = Namespace(**args)
-    token = KKTokenizer(args)
+    # token = KKTokenizer(args)
+    token = BertTokenizer(args)
     input = "中国人民解放军是一支战无不胜的队伍[MASK]"
     out = token.tokenize(input)
     print(out)
     out = token.convert_tokens_to_ids(out)
     print(out)
+    exit()
+
+    a = {"a":"AAA", "b":"BBBB"}
+    if "a" in a:
+        print("OK")
+    if "c" in a:
+        print("F")
     exit()
 
     sp_model = spm.SentencePieceProcessor(args)
@@ -34,6 +43,92 @@ def main():
     #     for i in vocab:
     #         f.write(i + "\n")
     exit()
+
+
+    def _is_chinese_char(cp):
+        """Checks whether CP is the codepoint of a CJK character."""
+        # This defines a "chinese character" as anything in the CJK Unicode block:
+        #   https://en.wikipedia.org/wiki/CJK_Unified_Ideographs_(Unicode_block)
+        #
+        # Note that the CJK Unicode block is NOT all Japanese and Korean characters,
+        # despite its name. The modern Korean Hangul alphabet is a different block,
+        # as is Japanese Hiragana and Katakana. Those alphabets are used to write
+        # space-separated words, so they are not treated specially and handled
+        # like the all of the other languages.
+        if ((cp >= 0x4E00 and cp <= 0x9FFF) or  #
+                (cp >= 0x3400 and cp <= 0x4DBF) or  #
+                (cp >= 0x20000 and cp <= 0x2A6DF) or  #
+                (cp >= 0x2A700 and cp <= 0x2B73F) or  #
+                (cp >= 0x2B740 and cp <= 0x2B81F) or  #
+                (cp >= 0x2B820 and cp <= 0x2CEAF) or
+                (cp >= 0xF900 and cp <= 0xFAFF) or  #
+                (cp >= 0x2F800 and cp <= 0x2FA1F)):  #
+            return True
+
+        return False
+
+    def _tokenize_chinese_chars(text):
+        """Adds whitespace around any CJK character."""
+        output = []
+        for char in text:
+            cp = ord(char)
+            if _is_chinese_char(cp):
+                output.append(" ")
+                output.append(char)
+                output.append(" ")
+            else:
+                output.append(char)
+        return "".join(output)
+
+    input = "中国人和USA不一样"
+    out = _tokenize_chinese_chars(input)
+    print(input)
+    exit()
+
+    # 检查 char 是否为 标点符号
+    def _is_punctuation(char):
+        """Checks whether `chars` is a punctuation character."""
+        cp = ord(char)
+        # We treat all non-letter/number ASCII as punctuation.
+        # Characters such as "^", "$", and "`" are not in the Unicode
+        # Punctuation class but we treat them as punctuation anyways, for
+        # consistency.
+        if ((cp >= 33 and cp <= 47) or (cp >= 58 and cp <= 64) or
+                (cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
+            return True
+        cat = unicodedata.category(char)
+        if cat.startswith("P"):
+            return True
+        return False
+
+    def _run_split_on_punc(text):
+        # 处理标点符号
+        """Splits punctuation on a piece of text."""
+        chars = list(text)
+        i = 0
+        start_new_word = True
+        # output[",",[“A","B"],",",["C","D"]]
+        output = []
+        while i < len(chars):
+            char = chars[i]
+            if _is_punctuation(char):
+                output.append([char])
+                start_new_word = True
+            else:
+                if start_new_word:
+                    output.append([])
+                start_new_word = False
+                output[-1].append(char)
+            i += 1
+
+        return ["".join(x) for x in output]
+
+    input = "我是，中国人民。"
+    tokens = ["I","a", ",", "a", "S","."]
+    a = _run_split_on_punc(tokens)
+    print(a)
+    exit()
+
 
     x = torch.arange(3, 18).float().reshape(-1, 5)
     print(x)
@@ -155,8 +250,8 @@ def main():
     a = torch.arange(1, 13).float().reshape(3, 4)
     print(a)
     print(a * 3)
-    list = [1, 2, 3]
-    print(list * 3)
+    l = [1, 2, 3]
+    print(l * 3)
     exit(0)
 
     a : torch.tensor = torch.arange(1, 13).float().reshape(3, 4)

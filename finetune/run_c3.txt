@@ -4,6 +4,8 @@
 --train_path datasets/c3/train.json
 --dev_path datasets/c3/dev.json
 --test_path datasets/c3/test.json
+
+--tokenizer bert
 #--tokenizer kk
 
 #--spm_model_path E:\Data\AiModel\chatglm-6b\ice_text.model
