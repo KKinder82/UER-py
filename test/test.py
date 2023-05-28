@@ -15,10 +15,11 @@ def main():
     args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt", "token_len":50}
     args = {"spm_model_path": r"", "vocab_path": "models/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
     args = {"spm_model_path": r"", "vocab_path": "models/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}
+    args = {"spm_model_path": r"", "vocab_path": "models/kk_zh_vocab.txt", "do_lower_case":True, "token_len":50}
     args = Namespace(**args)
     # token = KKTokenizer(args)
     token = KKTokenizer(args)
-    input = "中国人民解放军是一支战无不胜的队伍"
+    input = "中国人民解放军是一支战无不胜的队伍1335"
     out = token.tokenize(input) + [SEP_TOKEN]
     print(out)
     out = token.convert_tokens_to_ids(out)
