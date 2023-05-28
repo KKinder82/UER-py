@@ -1,5 +1,8 @@
 # -*- encoding:utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+
+import random
+
 from uer.utils.constants import *
 from uer.utils.vocab import Vocab
 import collections
@@ -59,10 +62,11 @@ class KKTokenizer(Tokenizer):
 
     def __init__(self, args, is_src=True, special_tokens=None):
         super().__init__(args, is_src)
-        if not args.spm_model_path:
-            raise ValueError("Please specify a vocabulary file path by --spm_model_path.")
+        self.token_len = args.token_len if args.token_len else 50
+        # token_len = token_len if token_len > 0 else random.randint(2, 50)
 
         self.spec_token_ids = {}
+
         for ispec in SPEC_TOKENS:
             ispec = ispec.strip()
             if ispec in self.vocab:
@@ -73,6 +77,9 @@ class KKTokenizer(Tokenizer):
 
         self.spec_ids = [t_id for (token, t_id) in self.spec_token_ids.items()]
         self.spec_token_ids_inv = {t_id: token for token,t_id in self.spec_token_ids.items()}
+
+        # index -> word
+        self.inv_vocab = {v: k for k, v in self.vocab.items()}
 
     def _splited_textList(self, textList, splitter):
         _newList: list = []
@@ -99,41 +106,138 @@ class KKTokenizer(Tokenizer):
             textList = self._splited_textList(textList, ispliter)
         return textList
 
+    def tokenize_vocab_max(self, text):
+        start_pos = 0
+        sub_text = ""
+        _len = len(text)
+        if _len < 1:
+            return []
+
+        tokens = []
+        while start_pos < _len:
+            i = self.token_len
+            while i > 0:
+                sub_text = text[start_pos:start_pos+i]
+                if sub_text in self.vocab:
+                    tokens.append(sub_text)
+                    start_pos += i
+                    i = 0
+                    continue
+                else:
+                    i -= 1
+                    if i < 1:
+                        tokens.append(UNK_TOKEN)
+                        start_pos += 1
+                    continue
+        return tokens
+
+    def tokenize_vocab(self, text):
+        start_pos = 0
+        sub_text = ""
+        _len = len(text)
+        if _len < 1:
+            return []
+
+        tokens = []
+        i = 1
+        while i<_len:
+            sub_text = text[start_pos:i]
+            if sub_text in self.vocab:
+                if i - start_pos < self.token_len:
+                    i += 1
+                    continue
+                tokens.append(sub_text)
+                start_pos = i
+                i += 1
+                continue
+            else:
+                if i - start_pos > 1:
+                    sub_text = text[start_pos: i-1]
+                    start_pos = i-1
+                else:
+                    sub_text = UNK_TOKEN
+                    start_pos = i
+                    i += 1
+                tokens.append(sub_text)
+                continue
+
+        sub_text = text[start_pos:i-1]
+        if sub_text != "":
+            tokens.append(sub_text)
+        return tokens
+
     def tokenize(self, text):
         split_list = [text]
         split_list = self._splited_textList2(split_list, SPEC_TOKENS)
-        _tokens = []
-        for itext in split_list:
-            if itext in SPEC_TOKENS:
-                _tokens += [itext]
-                continue
-            if itext == "":
-                continue
-            _tokens += self.sp_model.EncodeAsPieces(itext)
-        return _tokens
+        if self.sp_model:
+            _tokens = []
+            for itext in split_list:
+                if itext in SPEC_TOKENS:
+                    _tokens += [itext]
+                    continue
+                if itext == "":
+                    continue
+                _tokens += self.sp_model.EncodeAsPieces(itext)
+            return _tokens
+        else:
+            _tokens = []
+            for itext in split_list:
+                if itext in SPEC_TOKENS:
+                    _tokens += [itext]
+                    continue
+                if itext == "":
+                    continue
+
+                _tokens += self.tokenize_vocab_max(itext)
+                #_tokens += self.tokenize_vocab(itext)
+            return _tokens
 
     def convert_tokens_to_ids(self, tokens):
         ids = []
-        for itoken in tokens:
-            if itoken in SPEC_TOKENS:
-                _id = self.spec_token_ids[itoken]
-                ids.append(_id)
-            else:
-                itoken = printable_text(itoken)
-                _id = self.sp_model.PieceToId(itoken)
-                ids.append(_id)
-        return ids
+        if self.sp_model:
+            for itoken in tokens:
+                if itoken in SPEC_TOKENS:
+                    _id = self.spec_token_ids[itoken]
+                    ids.append(_id)
+                else:
+                    itoken = printable_text(itoken)
+                    _id = self.sp_model.PieceToId(itoken)
+                    ids.append(_id)
+            return ids
+        else:
+            for itoken in tokens:
+                if itoken in SPEC_TOKENS:
+                    _id = self.spec_token_ids[itoken]
+                    ids.append(_id)
+                else:
+                    itoken = printable_text(itoken)
+                    if itoken in self.vocab:
+                        _id = self.vocab[itoken]
+                    else:
+                        _id = self.vocab[UNK_TOKEN]
+                    ids.append(_id)
+            return ids
 
     def convert_ids_to_tokens(self, ids):
         tokens = []
-        for iid in ids:
-            if iid in self.spec_ids:
-                _token = self.spec_token_ids_inv[iid]
-                tokens.append(_token)
-            else:
-                _token = self.sp_model.IdToPiece(iid)
-                tokens.append(_token)
-        return tokens
+        if self.sp_model:
+            for iid in ids:
+                if iid in self.spec_ids:
+                    _token = self.spec_token_ids_inv[iid]
+                    tokens.append(_token)
+                else:
+                    _token = self.sp_model.IdToPiece(iid)
+                    tokens.append(_token)
+            return tokens
+        else:
+            for iid in ids:
+                if iid in self.spec_ids:
+                    _token = self.spec_token_ids_inv[iid]
+                    tokens.append(_token)
+                else:
+                    _token = self.inv_vocab[iid]
+                    tokens.append(_token)
+            return tokens
 
 
 class CharTokenizer(Tokenizer):
