@@ -46,7 +46,5 @@ class CrossVector(nn.Module):
         x_out = torch.bmm(x_1, x_t)
         x_out = x_out.flatten(start_dim=-2)
         x_out = self.out_layer(x_out)
-        _shape = src_shape[:-1]+[self.out_feather_size]
-        print(_shape)
-        x_out = x_out.view(_shape)
+        x_out = x_out.view(src_shape[:-1]+[self.out_feather_size])
         return x_out
