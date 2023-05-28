@@ -4,7 +4,7 @@ from torch.optim.lr_scheduler import LambdaLR
 import copy
 import argparse
 from argparse import Namespace
-from uer.layers.CrossLayers import CrossVector
+from uer.layers.cross_layers import CrossVector
 from kk.utils import *
 import sentencepiece as spm
 from uer.utils.tokenizers import *

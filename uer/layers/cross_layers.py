@@ -3,7 +3,7 @@ import torch.nn as nn
 from uer.layers.layer_norm import LayerNorm
 
 class CrossMatrix(nn.Module):
-    def __init__(self, in_feather_size, out_feather_size=None, useGate=True, outNorm=True, eps=1e-6):
+    def __init__(self, in_feather_size, out_feather_size=None, outNorm=True, eps=1e-6):
         super(CrossMatrix, self).__init__()
         self.feather_size = in_feather_size if isinstance(in_feather_size, (tuple, list)) else (in_feather_size, in_feather_size)
         if out_feather_size is None:
@@ -12,7 +12,7 @@ class CrossMatrix(nn.Module):
             self.out_feather_size = out_feather_size if isinstance(out_feather_size, (tuple, list)) else (out_feather_size, out_feather_size)
 
         self.cross_Vector = CrossVector(self.feather_size[0] * self.feather_size[1],
-                                        self.out_feather_size[0] * self.out_feather_size[1], useGate, outNorm, eps)
+                                        self.out_feather_size[0] * self.out_feather_size[1], outNorm, eps)
 
     # x : (batch, width, height)
     def forward(self, x):
@@ -27,12 +27,12 @@ class CrossVector(nn.Module):
     Layer Normalization.
     https://arxiv.org/abs/1607.06450
     """
-    def __init__(self, in_feather_size, out_feather_size=None, useGate=True, outNorm=True, eps=1e-6):
+    def __init__(self, in_feather_size, out_feather_size=None, outNorm=True, eps=1e-6):
         super(CrossVector, self).__init__()
         self.feather_size = in_feather_size
         self.out_feather_size = in_feather_size if out_feather_size is None else out_feather_size
         self.inner_feather_size = (self.feather_size + 1 ) ** 2
-        self.useGate = True if useGate else False
+        # self.useGate = True if useGate else False
         self.outNorm = True if outNorm else False
         self.eps = eps
         self.out_layer = nn.Linear(self.inner_feather_size, self.feather_size)

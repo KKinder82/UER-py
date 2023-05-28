@@ -26,6 +26,7 @@ from uer.opts import finetune_opts, tokenizer_opts, adv_opts
 from finetune.run_classifier import build_optimizer, load_or_initialize_parameters, train_model, batch_loader, evaluate
 
 from kk.utils import *
+from uer.layers.cross_layers import CrossVector
 
 
 # 选题题
@@ -35,7 +36,8 @@ class MultipleChoice(nn.Module):
         self.embedding = str2embedding[args.embedding](args, len(args.tokenizer.vocab))
         self.encoder = str2encoder[args.encoder](args)
         self.dropout = nn.Dropout(args.dropout)
-        self.output_layer = nn.Linear(args.hidden_size, 1)
+        # self.output_layer = nn.Linear(args.hidden_size, 1)
+        self.output_layer = CrossVector(args.hidden_size, 1)
         self.nll_loss = nn.NLLLoss()
         self.logSoftmax = nn.LogSoftmax(dim=-1)
 
