@@ -12,6 +12,11 @@ import random
 # from finetune.run_c3 import MultipleChoice
 
 def main():
+    a  = torch.arange(80).reshape(2,2,2,10).float()
+    nn = CrossVector(10, 1)
+    print(nn(a))
+    exit()
+
     args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt", "token_len":50}
     args = {"spm_model_path": r"", "vocab_path": "models/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
     args = {"spm_model_path": r"", "vocab_path": "models/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}

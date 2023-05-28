@@ -70,7 +70,6 @@ class MultipleChoice(nn.Module):
         else:
             return None, reshaped_logits
 
-
 def read_dataset(args, path):
 
     with open(path, mode="r", encoding="utf-8") as f:
