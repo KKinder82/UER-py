@@ -1,5 +1,5 @@
---pretrained_model_path models/finetuned_model.bin
---output_model_path models/finetuned_model.bin
+#--pretrained_model_path models/finetuned_model.bin
+--output_model_path models/finetuned_model_kk.bin
 --config_path models/bert/base_config.json
 --train_path datasets/c3/train.json
 --dev_path datasets/c3/dev.json
@@ -7,9 +7,10 @@
 
 #--tokenizer bert
 --tokenizer kk
---spm_model_path /home/rootbr/data/aimodels/chatglm-6b/ice_text.model
+#--spm_model_path /home/rootbr/data/aimodels/chatglm-6b/ice_text.model
 
---vocab_path models/chatGLM6_vocab.txt
+--vocab_path models/kk_zh_vocab.txt
+#--vocab_path models/chatGLM6_vocab.txt
 #--vocab_path models/google_zh_vocab.txt
 --epochs_num 1000
 --batch_size 8
