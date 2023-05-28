@@ -140,6 +140,8 @@ def tokenizer_opts(parser):
                              "Space tokenizer segments sentences into words according to space."
                              "Original XLM-RoBERTa uses xlmroberta tokenizer."
                              )
+    parser.add_argument("--token_len", type=int, default=50,
+                        help="Specify the token max len. ")
     parser.add_argument("--vocab_path", default=None, type=str,
                         help="Path of the vocabulary file.")
     parser.add_argument("--merges_path", default=None, type=str,

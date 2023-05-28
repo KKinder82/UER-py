@@ -12,12 +12,12 @@ import random
 # from finetune.run_c3 import MultipleChoice
 
 def main():
-    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt"}
-    args = {"spm_model_path": r"", "vocab_path": "models/google_zh_vocab.txt", "do_lower_case":True}
-    args = {"spm_model_path": r"", "vocab_path": "models/chatGLM6_vocab.txt", "do_lower_case":True}
+    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt", "token_len":50}
+    args = {"spm_model_path": r"", "vocab_path": "models/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
+    args = {"spm_model_path": r"", "vocab_path": "models/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}
     args = Namespace(**args)
     # token = KKTokenizer(args)
-    token = BertTokenizer(args)
+    token = KKTokenizer(args)
     input = "中国人民解放军是一支战无不胜的队伍"
     out = token.tokenize(input) + [SEP_TOKEN]
     print(out)
@@ -27,7 +27,7 @@ def main():
     print(out)
     print("------------")
 
-    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "", "do_lower_case":True}
+    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "", "do_lower_case":True, "token_len":50}
     args = Namespace(**args)
     token = KKTokenizer(args)
     input = "中国人民解放军是一支战无不胜的队伍"
