@@ -11,6 +11,7 @@ class MultiHeadedAttention(nn.Module):
     # hidden_size 隐层 特征大小
     # heads_num 头数
     # attention_head_size 每个头的 特征大小
+    # with_scale : / sqrt(d)
     def __init__(self, hidden_size, heads_num, attention_head_size, dropout, has_bias=True, with_scale = True):
         super(MultiHeadedAttention, self).__init__()
         self.heads_num = heads_num
@@ -38,7 +39,7 @@ class MultiHeadedAttention(nn.Module):
             value: [batch_size x seq_length x hidden_size]
             query: [batch_size x seq_length x hidden_size]
             mask: [batch_size x 1|多头 x seq_length x seq_length]
-            position_bias: [1 x heads_num x seq_length x seq_length]  # 位置 偏移
+            position_bias: [1 x heads_num x seq_length x seq_length]  # 位置 偏移 | 将加此值， 1为批次保留
         Returns:
             output: [batch_size x seq_length x hidden_size]
         """

@@ -2,7 +2,7 @@ import torch.nn as nn
 from uer.utils import *
 
 class PositionwiseFeedForward(nn.Module):
-    """ Feed Forward Layer. """
+    """ Feed Forward Layer.  前馈神经网络层 """
     def __init__(self, hidden_size, feedforward_size, hidden_act, has_bias=True):
         super(PositionwiseFeedForward, self).__init__()
         self.linear_1 = nn.Linear(hidden_size, feedforward_size, bias=has_bias)
