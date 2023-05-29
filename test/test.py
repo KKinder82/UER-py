@@ -4,10 +4,10 @@ from torch.optim.lr_scheduler import LambdaLR
 import copy
 import argparse
 from argparse import Namespace
-from uer.layers.cross_layers import CrossVector
+#from uer.layers.cross_layers import CrossVector
 from kk.utils import *
 import sentencepiece as spm
-from uer.utils.tokenizers import *
+# from uer.utils.tokenizers import *
 import random
 # from finetune.run_c3 import MultipleChoice
 
@@ -40,53 +40,53 @@ def main():
 
     exit()
 
-    a  = torch.arange(80).reshape(2,2,2,10).float()
-    cv = CrossVector(10, 1)
-    print(cv(a))
-    exit()
-
-    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt", "token_len":50}
-    args = {"spm_model_path": r"", "vocab_path": "models/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
-    args = {"spm_model_path": r"", "vocab_path": "models/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}
-    args = {"spm_model_path": r"", "vocab_path": "models/kk_zh_vocab.txt", "do_lower_case":True, "token_len":50}
-    args = Namespace(**args)
+    # a  = torch.arange(80).reshape(2,2,2,10).float()
+    # cv = CrossVector(10, 1)
+    # print(cv(a))
+    # exit()
+    #
+    # args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt", "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "models/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "models/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "models/kk_zh_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = Namespace(**args)
+    # # token = KKTokenizer(args)
     # token = KKTokenizer(args)
-    token = KKTokenizer(args)
-    input = "中国人民解放军是一支战无不胜的队伍1335"
-    out = token.tokenize(input) + [SEP_TOKEN]
-    print(out)
-    out = token.convert_tokens_to_ids(out)
-    print(out)
-    out = token.convert_ids_to_tokens(out)
-    print(out)
-    print("------------")
+    # input = "中国人民解放军是一支战无不胜的队伍1335"
+    # out = token.tokenize(input) + [SEP_TOKEN]
+    # print(out)
+    # out = token.convert_tokens_to_ids(out)
+    # print(out)
+    # out = token.convert_ids_to_tokens(out)
+    # print(out)
+    # print("------------")
+    #
+    # args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "", "do_lower_case":True, "token_len":50}
+    # args = Namespace(**args)
+    # token = KKTokenizer(args)
+    # input = "中国人民解放军是一支战无不胜的队伍"
+    # out = token.tokenize(input) + [SEP_TOKEN]
+    # print(out)
+    # out = token.convert_tokens_to_ids(out)
+    # print(out)
+    # out = token.convert_ids_to_tokens(out)
+    # print(out)
+    #
+    # exit()
 
-    args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "", "do_lower_case":True, "token_len":50}
-    args = Namespace(**args)
-    token = KKTokenizer(args)
-    input = "中国人民解放军是一支战无不胜的队伍"
-    out = token.tokenize(input) + [SEP_TOKEN]
-    print(out)
-    out = token.convert_tokens_to_ids(out)
-    print(out)
-    out = token.convert_ids_to_tokens(out)
-    print(out)
-
-    exit()
-
-    a = {"a":"AAA", "b":"BBBB"}
-    if "a" in a:
-        print("OK")
-    if "c" in a:
-        print("F")
-    exit()
-
-    sp_model = spm.SentencePieceProcessor(args)
-
-    sp_model.Load(r"E:\Data\AiModel\chatglm-6b\ice_text.model")
-    a = sp_model.EncodeAsPieces("<pad>中国人民解放军是一支战无不胜的队伍")
-    pad_str = sp_model.IdToPiece(sp_model.pad_id())
-    print(pad_str)
+    # a = {"a":"AAA", "b":"BBBB"}
+    # if "a" in a:
+    #     print("OK")
+    # if "c" in a:
+    #     print("F")
+    # exit()
+    #
+    # sp_model = spm.SentencePieceProcessor(args)
+    #
+    # sp_model.Load(r"E:\Data\AiModel\chatglm-6b\ice_text.model")
+    # a = sp_model.EncodeAsPieces("<pad>中国人民解放军是一支战无不胜的队伍")
+    # pad_str = sp_model.IdToPiece(sp_model.pad_id())
+    # print(pad_str)
 
     # with open("d:/icon_text_vocab.txt", "w", encoding="utf-8") as f:
     #     for i in vocab:
@@ -134,49 +134,6 @@ def main():
     print(input)
     exit()
 
-    # 检查 char 是否为 标点符号
-    def _is_punctuation(char):
-        """Checks whether `chars` is a punctuation character."""
-        cp = ord(char)
-        # We treat all non-letter/number ASCII as punctuation.
-        # Characters such as "^", "$", and "`" are not in the Unicode
-        # Punctuation class but we treat them as punctuation anyways, for
-        # consistency.
-        if ((cp >= 33 and cp <= 47) or (cp >= 58 and cp <= 64) or
-                (cp >= 91 and cp <= 96) or (cp >= 123 and cp <= 126)):
-            return True
-        cat = unicodedata.category(char)
-        if cat.startswith("P"):
-            return True
-        return False
-
-    def _run_split_on_punc(text):
-        # 处理标点符号
-        """Splits punctuation on a piece of text."""
-        chars = list(text)
-        i = 0
-        start_new_word = True
-        # output[",",[“A","B"],",",["C","D"]]
-        output = []
-        while i < len(chars):
-            char = chars[i]
-            if _is_punctuation(char):
-                output.append([char])
-                start_new_word = True
-            else:
-                if start_new_word:
-                    output.append([])
-                start_new_word = False
-                output[-1].append(char)
-            i += 1
-
-        return ["".join(x) for x in output]
-
-    input = "我是，中国人民。"
-    tokens = ["I","a", ",", "a", "S","."]
-    a = _run_split_on_punc(tokens)
-    print(a)
-    exit()
 
 
 
@@ -201,17 +158,17 @@ def main():
     exit()
 
 
-    a = [1, 2 , 3]
-    b = [4, 5, 6]
-    print(a + b)
-    exit(0)
-
-    feather_size = 5
-    x = torch.arange(3,2 * feather_size + 3).float().reshape(-1, feather_size)
-    cross_vecter = CrossVector(feather_size)
-    x_out = cross_vecter(x)
-    print(x_out)
-    exit()
+    # a = [1, 2 , 3]
+    # b = [4, 5, 6]
+    # print(a + b)
+    # exit(0)
+    #
+    # feather_size = 5
+    # x = torch.arange(3,2 * feather_size + 3).float().reshape(-1, feather_size)
+    # cross_vecter = CrossVector(feather_size)
+    # x_out = cross_vecter(x)
+    # print(x_out)
+    # exit()
 
     _one = x.new_ones((1, 1)).expand(x.size(0), 1)
     x_1 = x[..., None]
