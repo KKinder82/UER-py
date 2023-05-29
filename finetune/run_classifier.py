@@ -182,8 +182,8 @@ def train_model(args, model, optimizer, scheduler, src_batch, tgt_batch, seg_bat
 
     loss, _ = model(src_batch, tgt_batch, seg_batch, soft_tgt_batch)
 
-    if torch.cuda.device_count() > 1:
-        loss = torch.mean(loss)
+    # if torch.cuda.device_count() > 1:
+    #    loss = torch.mean(loss)
 
     if args.fp16:
         with args.amp.scale_loss(loss, optimizer) as scaled_loss:
