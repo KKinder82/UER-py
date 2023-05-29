@@ -12,9 +12,37 @@ import random
 # from finetune.run_c3 import MultipleChoice
 
 def main():
+    x = torch.arange(3, 23).float().reshape(-1, 5)
+    print(x)
+    x[:, 2] = 100
+    x1 = nn.Softmax(dim=-1)(x)
+    print(x1)
+    x1 = torch.log(x1)
+    print(x1)
+    x = nn.LogSoftmax(dim=-1)(x)
+    print(x)
+    y = torch.tensor([1, 2, 1, 1])
+
+
+    loss = nn.NLLLoss(reduction="mean")
+    if torch.cuda.device_count() > 1:
+        print("{} GPUs are available. Let's use them.".format(torch.cuda.device_count()))
+        model = torch.nn.DataParallel(loss)
+    loss = loss(x, y)
+    print(loss)
+
+    loss = nn.NLLLoss(reduction="none")
+    if torch.cuda.device_count() > 1:
+        print("{} GPUs are available. Let's use them.".format(torch.cuda.device_count()))
+        model = torch.nn.DataParallel(loss)
+    loss = loss(x, y)
+    print(loss)
+
+    exit()
+
     a  = torch.arange(80).reshape(2,2,2,10).float()
-    nn = CrossVector(10, 1)
-    print(nn(a))
+    cv = CrossVector(10, 1)
+    print(cv(a))
     exit()
 
     args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt", "token_len":50}
@@ -151,19 +179,7 @@ def main():
     exit()
 
 
-    x = torch.arange(3, 18).float().reshape(-1, 5)
-    print(x)
-    x[:, 2] = 100
-    x1 = nn.Softmax(dim=-1)(x)
-    print(x1)
-    x1 = torch.log(x1)
-    print(x1)
-    x = nn.LogSoftmax(dim=-1)(x)
-    print(x)
-    y = torch.tensor([1,2,1])
-    loss = nn.NLLLoss()(x, y)
-    print(loss)
-    exit()
+
 
     args = load_argsconfig("test.txt")
     print(args)

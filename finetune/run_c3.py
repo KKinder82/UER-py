@@ -213,6 +213,7 @@ def main():
         for i, (src_batch, tgt_batch, seg_batch, _) in enumerate(batch_loader(batch_size, src, tgt, seg)):
 
             loss = train_model(args, model, optimizer, scheduler, src_batch, tgt_batch, seg_batch)
+            # 从Tensor对象 取出 值
             total_loss += loss.item()
 
             if (i + 1) % args.report_steps == 0:

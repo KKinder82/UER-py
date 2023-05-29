@@ -21,7 +21,6 @@ class CrossMatrix(nn.Module):
         x = x.view(x.size(0), *self.out_feather_size)
         return x
 
-
 class CrossVector(nn.Module):
     """
     Layer Normalization.
