@@ -5,7 +5,7 @@ import copy
 import argparse
 from argparse import Namespace
 #from uer.layers.cross_layers import CrossVector
-from kk.utils import *
+#from kk.utils import *
 import sentencepiece as spm
 # from uer.utils.tokenizers import *
 import random
@@ -137,16 +137,16 @@ def main():
 
 
 
-
-    args = load_argsconfig("test.txt")
-    print(args)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--pretrained_mode_path", default="test.txt", type=str, help="The path of pretrained model.")
-    args = parser.parse_args(args)
-    print(args)
-
-    exit()
+    #
+    # args = load_argsconfig("test.txt")
+    # print(args)
+    #
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--pretrained_mode_path", default="test.txt", type=str, help="The path of pretrained model.")
+    # args = parser.parse_args(args)
+    # print(args)
+    #
+    # exit()
 
     # parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # args = parser.parse_args()
