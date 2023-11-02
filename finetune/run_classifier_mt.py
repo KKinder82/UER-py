@@ -85,9 +85,9 @@ def main():
     parser.add_argument("--pretrained_model_path", default=None, type=str,
                         help="Path of the pretrained model.")
     parser.add_argument("--dataset_path_list", default=[], nargs='+', type=str, help="Dataset path list.")
-    parser.add_argument("--output_model_path", default="models/multitask_classifier_model.bin", type=str,
+    parser.add_argument("--output_model_path", default="uer/multitask_classifier_model.bin", type=str,
                         help="Path of the output model.")
-    parser.add_argument("--config_path", default="models/bert/base_config.json", type=str,
+    parser.add_argument("--config_path", default="uer/bert/base_config.json", type=str,
                         help="Path of the config file.")
 
     # Model options.

@@ -9,18 +9,21 @@ class Vocab(object):
     """
     """
     def __init__(self):
-        self.w2i = {} 
-        self.i2w = [] 
-        self.w2c = {}
+        self.w2i = {}   # word 2 index
+        self.i2w = []   # index 2 word
+        self.w2c = {}   # word 2 count
         self.reserved_vocab_path = \
             os.path.abspath(os.path.join(os.path.dirname(__file__), "../../models/reserved_vocab.txt"))
         
     def load(self, vocab_path, is_quiet=False):
         with open(vocab_path, mode="r", encoding="utf-8") as reader:
             for index, line in enumerate(reader):
-                w = line.strip("\r\n").split()[0] if line.strip() else line.strip("\r\n")
-                self.w2i[w] = index
-                self.i2w.append(w)
+                # w = line.strip("\r\n").split()[0] if line.strip() else line.strip("\r\n")
+                if line.strip():
+                    w = line.strip("\r\n").split()[0]
+                    self.w2i[w] = index
+                    self.i2w.append(w)
+
         if not is_quiet:
             print("Vocabulary size: ", len(self))
 
@@ -85,7 +88,7 @@ class Vocab(object):
                     i2w.append(w)
                 else:
                     w2c[w] += w2c_p[w]
-        return (w2i, i2w, w2c)
+        return w2i, i2w, w2c
                     
     def build(self, corpus_path, tokenizer, workers_num=1, min_count=1):
         """ Build vocabulary from the given corpus. """

@@ -21,6 +21,10 @@ from inference.run_classifier_infer import *
 
 
 def main():
+    # 读取 C:\aa.json 文件
+    with open("C:\\aa.json", "r", encoding="utf-8") as f:
+
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     infer_opts(parser)

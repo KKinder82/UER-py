@@ -3,7 +3,7 @@ import torch.nn as nn
 
 class Model(nn.Module):
     """
-    Pretraining models consist of three (five) parts:
+    Pretraining uer consist of three (five) parts:
         - embedding
         - encoder
         - tgt_embedding (optional)

@@ -3,7 +3,7 @@ import torch.nn as nn
 
 class Target(nn.Module):
     def __init__(self):
-        self.target_list = []
+        self.target_list = []   # 存储函数，存储模型的 target函数
         self.target_name_list = []
         self.loss_info = {}
 

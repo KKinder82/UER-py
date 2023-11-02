@@ -28,7 +28,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Build tokenizer only for char and space.
-    args.vocab_path, args.spm_model_path = "./models/reserved_vocab.txt", None
+    args.vocab_path, args.spm_model_path = "./uer/reserved_vocab.txt", None
     tokenizer = str2tokenizer[args.delimiter](args)
 
     # Build and save vocabulary using CharTokenizer or SpaceTokenizer.

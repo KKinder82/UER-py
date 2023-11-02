@@ -78,7 +78,7 @@ def main():
     parser.add_argument("--output_prob", action="store_true", help="Write probabilities to output file.")
 
     parser.add_argument("--prompt_id", type=str, default="chnsenticorp_char")
-    parser.add_argument("--prompt_path", type=str, default="models/prompts.json")
+    parser.add_argument("--prompt_path", type=str, default="uer/prompts.json")
 
     args = parser.parse_args()
 

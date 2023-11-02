@@ -85,6 +85,7 @@ def load_or_initialize_parameters(args, model):
         # Initialize with normal distribution.
         for n, p in list(model.named_parameters()):
             if "gamma" not in n and "beta" not in n:
+                #初始化
                 p.data.normal_(0, 0.02)
 
 

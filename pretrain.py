@@ -15,7 +15,7 @@ def main():
                         help="Path of the pretrained model.")
     parser.add_argument("--output_model_path", type=str, required=True,
                         help="Path of the output model.")
-    parser.add_argument("--config_path", type=str, default="models/bert/base_config.json",
+    parser.add_argument("--config_path", type=str, default="uer/bert/base_config.json",
                         help="Config file of model hyper-parameters.")
 
     # Training and saving options.
@@ -42,11 +42,12 @@ def main():
 
     # Model options.
     model_opts(parser)
-    parser.add_argument("--data_processor", choices=["bert", "lm", "mlm", "bilm", "albert", "mt", "t5", "cls", "prefixlm", "gsg", "bart", "cls_mlm"], default="bert",
+    parser.add_argument("--data_processor", choices=["bert", "lm", "mlm", "bilm", "albert", "mt", "t5", "cls", "prefixlm", "gsg", "bart", "cls_mlm"],
+                        default="bert",
                         help="The data processor of the pretraining model.")
     parser.add_argument("--deep_init", action="store_true",
                         help="Scaling initialization of projection layers by a "
-                             "factor of 1/sqrt(2N). Necessary to large models.")
+                             "factor of 1/sqrt(2N). Necessary to large uer.")
 
     # Masking options.
     parser.add_argument("--whole_word_masking", action="store_true", help="Whole word masking.")
@@ -79,21 +80,23 @@ def main():
 
     # Load hyper-parameters from config file.
     if args.config_path:
+        # 加载超参数
         args = load_hyperparam(args)
 
     ranks_num = len(args.gpu_ranks)
 
     if args.deepspeed:
         if args.world_size > 1:
+            # 分布式训练
             args.dist_train = True
         else:
             args.dist_train = False
     else:
         if args.world_size > 1:
             # Multiprocessing distributed mode.
-            assert torch.cuda.is_available(), "No available GPUs."
-            assert ranks_num <= args.world_size, "Started processes exceed `world_size` upper limit."
-            assert ranks_num <= torch.cuda.device_count(), "Started processes exceeds the available GPUs."
+            assert torch.cuda.is_available(), "No available GPUs."  # 有显卡
+            assert ranks_num <= args.world_size, "Started processes exceed `world_size` upper limit."   # 小于集群总显卡数
+            assert ranks_num <= torch.cuda.device_count(), "Started processes exceeds the available GPUs." # 小于本机显卡数
             args.dist_train = True
             args.ranks_num = ranks_num
             print("Using distributed mode for training.")

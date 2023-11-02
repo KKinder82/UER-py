@@ -29,7 +29,7 @@ def main():
 
     # Model options.
     parser.add_argument("--models_num", type=int, default=64,
-                        help="Number of models for ensemble.")
+                        help="Number of uer for ensemble.")
     parser.add_argument("--folds_num", type=int, default=5,
                         help="Number of folds for cross validation.")    
     parser.add_argument("--labels_num", type=int, default=2,

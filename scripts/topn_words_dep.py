@@ -40,7 +40,7 @@ if __name__ == '__main__':
                         help="Path of the candidate vocabulary file.")
     parser.add_argument("--test_path", type=str, required=True,
                         help="Path of the target word an its context.")
-    parser.add_argument("--config_path", default="models/bert/base_config.json", type=str,
+    parser.add_argument("--config_path", default="uer/bert/base_config.json", type=str,
                         help="Path of the config file.")
 
     tokenizer_opts(parser)

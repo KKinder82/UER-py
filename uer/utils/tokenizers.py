@@ -32,8 +32,7 @@ class Tokenizer(object):
                                                     "pip install sentencepiece")
             self.sp_model = spm.SentencePieceProcessor()
             self.sp_model.Load(spm_model_path)
-            self.vocab = {self.sp_model.IdToPiece(i): i for i
-                                        in range(self.sp_model.GetPieceSize())}
+            self.vocab = {self.sp_model.IdToPiece(i): i for i in range(self.sp_model.GetPieceSize())}
         else:
             self.vocab = Vocab()
             self.vocab.load(vocab_path, is_quiet=True)
@@ -571,8 +570,8 @@ class BasicTokenizer(object):
         text = self._clean_text(text)
 
         # This was added on November 1st, 2018 for the multilingual and Chinese
-        # models. This is also applied to the English models now, but it doesn't
-        # matter since the English models were not trained on any Chinese data
+        # uer. This is also applied to the English uer now, but it doesn't
+        # matter since the English uer were not trained on any Chinese data
         # and generally don't have any Chinese data in them (there are Chinese
         # characters in the vocabulary because Wikipedia does have some Chinese
         # words in the English Wikipedia.).

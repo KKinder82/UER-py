@@ -20,7 +20,7 @@ def main():
 
     # Model options.
     parser.add_argument("--models_num", type=int, default=64,
-                        help="Number of models for ensemble.")
+                        help="Number of uer for ensemble.")
     parser.add_argument("--labels_num", type=int, default=6,
                         help="Number of label.")
 

@@ -36,17 +36,19 @@ def train_and_validate(args):
         if args.deep_init:
             scaled_factor = 1 / math.sqrt(2.0 * args.layers_num)
             for n, p in list(model.named_parameters()):
+                # n : name of parameters
+                # p : parameters
                 if "gamma" not in n and "beta" not in n:
                     if "linear_2.weight" in n or "final_linear.weight" in n:
-                        p.data.normal_(0, 0.02 * scaled_factor)
+                        p.data.normal_(0, 0.02 * scaled_factor)     # 正态分布实始化
                     elif "linear_2.bias" in n or "final_linear.bias" in n:
-                        p.data.zero_()
+                        p.data.zero_()      # 全0
                     else:
                         p.data.normal_(0, 0.02)
         else:
             for n, p in list(model.named_parameters()):
                 if "gamma" not in n and "beta" not in n:
-                    p.data.normal_(0, 0.02)
+                    p.data.normal_(0, 0.02)     # 正态分布实始化
 
     if args.deepspeed:
         worker(args.local_rank, None, args, model)
@@ -99,8 +101,11 @@ class Trainer(object):
                 for i in range(len(batch)):
                     batch[i] = batch[i].cuda(gpu_id)
 
+
+            # 前向传播
             loss = self.forward_propagation(batch, model)
 
+            # 更新计算梯度
             if args.deepspeed:
                 model.backward(loss)
             else:
@@ -110,6 +115,7 @@ class Trainer(object):
                 else:
                     loss.backward()
 
+            # 累积指定的总数后，优化参数
             if self.current_step % self.accumulation_steps == 0:
                 if args.deepspeed:
                     model.step()
@@ -118,11 +124,13 @@ class Trainer(object):
                     scheduler.step()
                     model.zero_grad()
 
+            # 报告和重置统计信息
             if self.current_step % self.report_steps == 0 and \
                     (not self.dist_train or (self.dist_train and rank == 0)):
                 self.report_and_reset_stats()
                 self.start_time = time.time()
 
+            # 保存 Checkpoint 检查点
             if args.deepspeed:
                 if self.current_step % self.save_checkpoint_steps == 0:
                     model.save_checkpoint(self.output_model_path, str(self.current_step))
@@ -422,6 +430,8 @@ class PrefixlmTrainer(MlmTrainer):
     pass
 
 
+# Masked LM(MLM)
+# cls 分类
 str2trainer = {"bert": BertTrainer, "mlm": MlmTrainer, "lm": LmTrainer,
                "albert": AlbertTrainer, "bilm": BilmTrainer, "cls": ClsTrainer,
                "mt": MtTrainer, "t5": T5Trainer, "gsg": GsgTrainer,
@@ -442,6 +452,7 @@ def worker(proc_id, gpu_ranks, args, model):
 
     if args.deepspeed:
         import deepspeed
+        # deepspeed 初始化
         deepspeed.init_distributed(dist_backend=args.backend)
         rank = dist.get_rank()
         gpu_id = proc_id
@@ -456,7 +467,8 @@ def worker(proc_id, gpu_ranks, args, model):
         gpu_id = None
 
     if args.dist_train:
-        train_loader = str2dataloader[args.data_processor](args, args.dataset_path, args.batch_size, rank, args.world_size, True)
+        train_loader = str2dataloader[args.data_processor](args, args.dataset_path, args.batch_size, rank,
+                                                           args.world_size, True)
     else:
         train_loader = str2dataloader[args.data_processor](args, args.dataset_path, args.batch_size, 0, 1, True)
 
@@ -480,6 +492,7 @@ def worker(proc_id, gpu_ranks, args, model):
         custom_scheduler = str2scheduler[args.scheduler](custom_optimizer, args.total_steps*args.warmup, args.total_steps)
 
     if args.deepspeed:
+        # todo: deepspeed 初始化
         model, optimizer, _, scheduler = deepspeed.initialize(
                                                     model=model,
                                                     model_parameters=optimizer_grouped_parameters,

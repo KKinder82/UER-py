@@ -30,7 +30,7 @@ def main():
                         help="Path of the testset.")
     parser.add_argument("--test_features_path", default=None, type=str,
                         help="Path of the test features for stacking.")
-    parser.add_argument("--config_path", default="models/bert/base_config.json", type=str,
+    parser.add_argument("--config_path", default="uer/bert/base_config.json", type=str,
                         help="Path of the config file.")
 
     # Model options.

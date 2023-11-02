@@ -12,6 +12,55 @@ import random
 # from finetune.run_c3 import MultipleChoice
 
 def main():
+    x = torch.tensor([])
+    
+    # 创建一个示例张量
+    x = torch.tensor([[1, 2, 3],
+                      [4, 5, 6],
+                      [7, 8, 9]])
+
+    # 选择第一维的所有元素
+    y = x[slice(None), 1]
+    print(y)  # 输出: tensor([2, 5, 8])
+    y = x[:, 1]
+    print(y)  # 输出: tensor([2, 5, 8])
+    y = x[slice(None), 0]
+    print(y)  # 输出: tensor([1, 4, 7])
+
+    # 选择第二维的所有元素
+    z = x[0, slice(None)]
+    print(z)  # 输出: tensor([1, 2, 3])
+    z = x[1, slice(None)]
+    print(z)  # 输出: tensor([4, 5, 6])
+
+    print([slice(None)] * 3)
+    exit(0)
+
+    # 在设备0上创建张量x
+    x0 = torch.tensor([[1, 2, 3],
+                       [4, 5, 6]], device='cuda:0')
+
+    # 在设备1上创建张量x
+    x1 = torch.tensor([[1, 8, 9],
+                       [10, 15, 12]], device='cuda:0')
+
+    # 创建目标设备（设备0）上的张量
+    target_device = torch.device('cuda:0')
+    target_shape = (2, 3)
+    target_tensor = torch.zeros(target_shape, device=target_device)
+    target_tensor = torch.arange(1, 13, device=target_device).reshape(4, 3).float()
+    print(target_tensor)
+
+    indexes = torch.tensor([[0, 1], [0, 2]], device=target_device)
+    out = torch.gather(target_tensor, 0, indexes)
+    print(out)
+
+    exit(0)
+
+    # 创建目标设备（设备0）上的张量
+
+
+
     x = torch.arange(3, 23).float().reshape(-1, 5)
     print(x)
     x[:, 2] = 100
@@ -45,10 +94,10 @@ def main():
     # print(cv(a))
     # exit()
     #
-    # args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "models/google_zh_vocab.txt", "token_len":50}
-    # args = {"spm_model_path": r"", "vocab_path": "models/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
-    # args = {"spm_model_path": r"", "vocab_path": "models/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}
-    # args = {"spm_model_path": r"", "vocab_path": "models/kk_zh_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "uer/google_zh_vocab.txt", "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "uer/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "uer/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "uer/kk_zh_vocab.txt", "do_lower_case":True, "token_len":50}
     # args = Namespace(**args)
     # # token = KKTokenizer(args)
     # token = KKTokenizer(args)
@@ -156,7 +205,6 @@ def main():
     for i in ps:
         print(i)
     exit()
-
 
     # a = [1, 2 , 3]
     # b = [4, 5, 6]
@@ -318,6 +366,48 @@ def main():
 
     t = 1
     fun1 = lambda t : t * 2
+
+
+    x = torch.tensor([1, 2, 3]).float()
+    y = torch.tensor([1230]).float()
+
+    model = testLayer()
+    optim = torch.optim.SGD(model.parameters(), lr=0.001)
+    loss_function = torch.nn.MSELoss()
+    print("---- 1 ----")
+    print_model(model)
+    out = model(x)
+    loss = loss_function(out, y)
+
+    print("---- 2 ----")
+    print_model(model)
+    loss.backward()
+
+    print("---- 3 ----")
+    print_model(model)
+    optim.step()
+
+    print("---- 4 ----")
+    print_model(model)
+    optim.zero_grad()
+
+    print("---- 5 ----")
+    print_model(model)
+
+    exit(0)
+
+    x = torch.arange(10).view(5, 2).float() * 0.5
+    mn = torch.ones(2).float()
+    mx = torch.ones(2).float()
+    mx[1] = mx[1] + 2
+    print(x)
+
+    for b in range(x.shape[0]):
+        x[b][x[b] < mn] = mn[x[b] < mn]
+        x[b][x[b] > mx] = mx[x[b] > mx]
+
+    print("")
+    print(x)
 
     lr = LambdaLR([])
     for i in range(10):

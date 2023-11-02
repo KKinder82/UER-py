@@ -5,7 +5,7 @@ import copy
 
 class DualEncoder(nn.Module):
     """
-    Dual Encoder which enables siamese models like SBER and CLIP.
+    Dual Encoder which enables siamese uer like SBER and CLIP.
     """
     def __init__(self, args):
         super(DualEncoder, self).__init__()

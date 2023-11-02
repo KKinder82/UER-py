@@ -35,6 +35,7 @@ def model_opts(parser):
     parser.add_argument("--has_residual_attention", action="store_true", help="Add residual attention.")
     parser.add_argument("--has_lmtarget_bias", action="store_true",
                         help="Add bias on output_layer for lm target.")
+    # 任务类型
     parser.add_argument("--target", choices=["sp", "lm", "mlm", "bilm", "cls"], default="mlm", nargs='+',
                         help="The training target of the pretraining model.")
     parser.add_argument("--tie_weights", action="store_true",
@@ -90,7 +91,7 @@ def finetune_opts(parser):
     # Path options.
     parser.add_argument("--pretrained_model_path", default=None, type=str,
                         help="Path of the pretrained model.")
-    parser.add_argument("--output_model_path", default="models/finetuned_model.bin", type=str,
+    parser.add_argument("--output_model_path", default="uer/finetuned_model.bin", type=str,
                         help="Path of the output model.")
     parser.add_argument("--train_path", type=str, required=True,
                         help="Path of the trainset.")
@@ -98,7 +99,7 @@ def finetune_opts(parser):
                         help="Path of the devset.")
     parser.add_argument("--test_path", default=None, type=str,
                         help="Path of the testset.")
-    parser.add_argument("--config_path", default="models/bert/base_config.json", type=str,
+    parser.add_argument("--config_path", default="uer/bert/base_config.json", type=str,
                         help="Path of the config file.")
 
     # Model options.
@@ -133,7 +134,7 @@ def infer_opts(parser):
 
 
 def tokenizer_opts(parser):
-    parser.add_argument("--tokenizer", choices=["bert", "bpe", "char", "space", "xlmroberta","kk"], default="bert",
+    parser.add_argument("--tokenizer", choices=["bert", "bpe", "char", "space", "xlmroberta", "kk"], default="bert",
                         help="Specify the tokenizer." 
                              "Original Google BERT uses bert tokenizer."
                              "Char tokenizer segments sentences into characters."
@@ -168,10 +169,10 @@ def tgt_tokenizer_opts(parser):
 def deepspeed_opts(parser):
     parser.add_argument("--deepspeed", action="store_true",
                         help=".")
-    parser.add_argument("--deepspeed_config", default="models/deepspeed_config.json", type=str,
+    parser.add_argument("--deepspeed_config", default="uer/deepspeed_config.json", type=str,
                         help=".")
     parser.add_argument("--deepspeed_checkpoint_activations", action='store_true',
-                        help="Checkpoint activation to allow for training with larger models, sequences, and batch sizes.")
+                        help="Checkpoint activation to allow for training with larger uer, sequences, and batch sizes.")
     parser.add_argument("--deepspeed_checkpoint_layers_num", type=int, default=1,
                         help="chunk size (number of layers) for checkpointing.")
     parser.add_argument("--local_rank", type=int, required=False)

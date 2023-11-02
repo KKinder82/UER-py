@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 # Sentance Prediction Target
 class SpTarget(nn.Module):
 
@@ -23,7 +24,7 @@ class SpTarget(nn.Module):
             loss_sop: Sentence order prediction loss.
             correct_sop: Number of sentences that are predicted correctly.
         """
-        memory_bank = memory_bank[:, 0, :]  #取出第 0 个位置的特征
+        memory_bank = memory_bank[:, 0, :]  # 取出第 0 个位置的特征
         output_sp = self.sp_linear_1(memory_bank)
         output_sp = torch.tanh(output_sp)
         output_sp = self.sp_linear_2(output_sp)

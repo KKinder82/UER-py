@@ -14,9 +14,9 @@ def main():
     parser = argparse.ArgumentParser()
 
     # Path options.
-    parser.add_argument("--input_model_path", type=str, default="models/input_model.ckpt",
+    parser.add_argument("--input_model_path", type=str, default="uer/input_model.ckpt",
                         help="Path of the input model.")
-    parser.add_argument("--output_model_path", type=str, default="models/output_model.bin",
+    parser.add_argument("--output_model_path", type=str, default="uer/output_model.bin",
                         help="Path of the output model.")
 
     args = parser.parse_args()

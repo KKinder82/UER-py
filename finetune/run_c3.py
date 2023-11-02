@@ -25,11 +25,11 @@ from uer.model_saver import save_model
 from uer.opts import finetune_opts, tokenizer_opts, adv_opts
 from finetune.run_classifier import build_optimizer, load_or_initialize_parameters, train_model, batch_loader, evaluate
 
-from kk.utils import *
+from kk.kk_utils import *
 from uer.layers.cross_layers import CrossVector
 
 
-# 选题题
+# 多选题
 class MultipleChoice(nn.Module):
     def __init__(self, args):
         super(MultipleChoice, self).__init__()
@@ -46,13 +46,13 @@ class MultipleChoice(nn.Module):
         Args:
             src: [batch_size x choices_num x seq_length] | 选项 + 问题 + 背景
             tgt: [batch_size] | 0, 1, 2, 3, 答案 序号
-            seg: [batch_size x choices_num x seq_length]
+            seg: [batch_size x choices_num x seq_length]  # 掩码
         """
 
-        choices_num = src.shape[1]
+        choices_num = src.shape[1]          # 最大候选项数量
 
-        src = src.view(-1, src.size(-1))
-        seg = seg.view(-1, seg.size(-1))
+        src = src.view(-1, src.size(-1))    # shape(batch_size * choices_num, seq_length)
+        seg = seg.view(-1, seg.size(-1))    # shape(batch_size * choices_num, seq_length)
 
         # Embedding.
         emb = self.embedding(src, seg)
@@ -77,9 +77,12 @@ def read_dataset(args, path):
 
     examples = []
     for i in range(len(data)):
+        # i: 一道题
         for j in range(len(data[i][1])):
+            # j: 试题信息
             example = ["\n".join(data[i][0]).lower(), data[i][1][j]["question"].lower()]
             for k in range(len(data[i][1][j]["choice"])):
+                # k 一个候选项
                 example += [data[i][1][j]["choice"][k].lower()]
             for k in range(len(data[i][1][j]["choice"]), args.max_choices_num):
                 example += ["No Answer"]
@@ -87,23 +90,28 @@ def read_dataset(args, path):
             example += [data[i][1][j].get("answer", "").lower()]
 
             examples += [example]
-    # example[0背景，1问题，2选项1， 3选项2， 4选项3， 5选项4，6答案
+    # example[[0背景，1问题，2选项1， 3选项2， 4选项3， 5选项4，6答案], []]
     dataset = []
+    # dataset = [([src|候选项1,], tgt|答案序号, [seg|掩码,]) ]  一个候选项
     for i, example in enumerate(examples):
         tgt = 0
+        # 将答案输换为 0,1,2,3 的序号
         for k in range(args.max_choices_num):
             if example[2 + k] == example[6]:
-                tgt = k # 序号 0,1,2,3
+                tgt = k     # 序号 0,1,2,3
         dataset.append(([], tgt, []))
 
         for k in range(args.max_choices_num):
-
+            # src_a -> CLS_TOKEN + 选项 + SEP_TOKEN
             src_a = args.tokenizer.convert_tokens_to_ids([CLS_TOKEN] + args.tokenizer.tokenize(example[k + 2]) + [SEP_TOKEN])
+            # src_b -> 问题 + SEP_TOKEN
             src_b = args.tokenizer.convert_tokens_to_ids(args.tokenizer.tokenize(example[1]) + [SEP_TOKEN])
+            # src_b -> 背景 + SEP_TOKEN
             src_c = args.tokenizer.convert_tokens_to_ids(args.tokenizer.tokenize(example[0]) + [SEP_TOKEN])
 
-            #   CLS选项SEP + 问题SEP + 背景SEP | 背景 相对来说 不重要, 可以删除，因此，后在后面
+            # src -> CLS_TOKEN + 选项 + SEP_TOKEN + 问题 + SEP_TOKEN + 背景 + SEP_TOKEN | 背景 相对来说 不重要, 可以删除，因此，后在后面
             src = src_a + src_b + src_c
+            # seg 1: 选项 + 问题 | 2: 背景
             seg = [1] * (len(src_a) + len(src_b)) + [2] * len(src_c)
 
             if len(src) > args.seq_length:
@@ -123,14 +131,10 @@ def read_dataset(args, path):
 
 
 def main():
+    config_args = []
+    config_args = load_argsconfig("afinetune/run_c3.txt")
+
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument("--args_path", default="finetune/run_c3.txt", type=str, help="config use file" )
-
-    args = parser.parse_args()
-    config_args = None
-    if args.args_path:
-        config_args = load_argsconfig(args.args_path)
 
     finetune_opts(parser)
 
