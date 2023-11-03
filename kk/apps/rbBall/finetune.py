@@ -1,9 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import kk.apps.kk_app as kkf
-import kk.uer.kk_module as kkm
-import kk.uer.layers.kk_Transformer as kkt
 import logging as log
 import tqdm
 import models as rbModels
@@ -28,7 +25,6 @@ def train():
     model.to(device)
     x = x.to(device)
     y = y.to(device)
-
 
     # 训练
     model.train()
