@@ -2,64 +2,21 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import kk.finetune.kk_finetune as kkf
+import kk.uer.kk_module as kkm
+import kk.uer.layers.kk_Transformer as kkt
 
-class RBModel(nn.Module):
-    def __init__(self):
+class RBModel(kkf.Kk_Finetune):
+    def __init__(self, config:kkm.KKM_Config):
         super(RBModel, self).__init__()
-        self.net1 = nn.Sequential(
-            nn.Linear(88, 88 * 3, bias=False),
-            nn.ReLU(),
-            nn.BatchNorm1d(88 * 3),
-            nn.Linear(88 * 3, 88, bias=False),
-        )
+        self.net = kkt.Kk_Transformer(config=config, in_feather=88, out_feather=88, loops=6)
 
-        self.net2 = nn.Sequential(
-            nn.Linear(88, 88 * 3, bias=False),
-            nn.ReLU(),
-            nn.BatchNorm1d(88 * 3),
-            nn.Linear(88 * 3, 88, bias=False),
-        )
-
-        self.net_Q = nn.Sequential(
-            nn.Linear(88*2, 88, bias=False),
-        )
-
-        self.net_K = nn.Sequential(
-            nn.Linear(88*2, 88, bias=False),
-        )
-
-        self.net_V = nn.Sequential(
-            nn.Linear(88*2, 88, bias=False),
-        )
-
-        self.TransLayer = nn.Sequential(
-            nn.Transformer(88 * 6, 6),
-            nn.MultiheadAttention(88 * 6, 6),
-            nn.MultiheadAttention(88 * 6, 6),
-        )
-
-        self.t = nn.Transformer()
-        self.t()
-
-        self.MLP = nn.Sequential(
-            nn.Linear(88 * )
-
-    def forward(self, x, last):
-        x = self.net1(x)
-        bs = x.shape[0]
-        last = self.net2(last)
-        x_all = torch.cat([x, last], dim=0)
-        Q = self.net_Q(x_all)
-        K = self.net_K(x_all)
-        V = self.net_V(x_all)
-        x = self.MSA(Q, K, V)
-        x = x.view(88)
-        return x
+    def forward(self, x, context):
+        o = self.net(context, x)
+        return o
 
 
-
-
-def main():
+def train():
     train = np.load("../datasets/rbBall/rbBall_train.npy")
     val = np.load("../datasets/rbBall/rbBall_train.npy")
     # test = np.load("../datasets/rbBall/rbBall_train.npy")
@@ -67,6 +24,9 @@ def main():
     y = train[:, 88:]
 
     # 编码
+
+def main():
+
 
 
     print(y.shape)

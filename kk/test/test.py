@@ -12,6 +12,96 @@ import random
 # from finetune.run_c3 import MultipleChoice
 
 def main():
+    # 组标准化 对一个样本的几个特征（参数指定）的所有数据进行标准化 shape(n,c,d) -> 计算 n*c/个数 个均值与方差
+    x = torch.arange(1 * 2 * 3, dtype=torch.float32).view(1, 2, 3) + 1
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 2, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 3, 2)
+    norm = nn.GroupNorm(1 ,3)   # 指定组数、通道数
+    y = norm(x)
+    # print(x)
+    print(y)
+    print('-'*100)
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 3, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 3, 2)
+    norm = nn.GroupNorm(1 ,3)   # 指定组数、通道数
+    y = norm(x)
+    # print(x)
+    print(y)
+
+    exit()
+
+    # 实例准化(同层标准化）  一个样本的一个特征的所有数据进行标准化:  shape(n,c,d） -> 计算 n*c 个均值与方差
+    x = torch.arange(1 * 2 * 3, dtype=torch.float32).view(1, 2, 3) + 1
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 2, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 2, 3)
+    norm = nn.InstanceNorm1d(3)
+    y = norm(x)
+    # print(x)
+    print(y)
+    print('-'*100)
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 3, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 2, 3)
+    norm = nn.InstanceNorm1d(1)
+    y = norm(x)
+    # print(x)
+    print(y)
+    print('-'*100)
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 3, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 2, 3)
+    norm = nn.LayerNorm(3)
+    y = norm(x)
+    # print(x)
+    print(y)
+
+    exit()
+
+    # 层标准化  一个样本的一个特征的所有数据进行标准化:  shape(n,c,d） -> 计算 n*c 个均值与方差
+    x = torch.arange(1 * 2 * 3, dtype=torch.float32).view(1, 2, 3) + 1
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 2, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 2, 3)
+    norm = nn.LayerNorm(3)
+    y = norm(x)
+    # print(x)
+    print(y)
+
+    print('-'*100)
+
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 3, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 2, 3)
+    norm = nn.LayerNorm(3)
+    y = norm(x)
+    # print(x)
+    print(y)
+
+    exit()
+
+    # 批归一  （一个特征的所有数据（一个批次下（所有样本）的所有数据）进行标准化:  shape(n,c,d） -> 计算 c个均值与方差）
+    x = torch.arange(1 * 2 * 3, dtype=torch.float32).view(1, 2, 3) + 1
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 2, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 2, 3)
+    norm = nn.BatchNorm1d(2)
+    y = norm(x)
+    # print(x)
+    print(y)
+
+    print('-'*100)
+
+    x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 5, 2, 2, 2, ]], dtype=torch.float32)
+    x = x.view(2, 2, 3)
+    norm = nn.BatchNorm1d(2)
+    y = norm(x)
+    # print(x)
+    print(y)
+
+    exit(0)
+
+
+    x = [i for i in range(1,5)]
+    print(x)
+    exit()
+
+
+
     x = torch.tensor([])
     
     # 创建一个示例张量
