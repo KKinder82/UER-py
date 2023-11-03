@@ -29,7 +29,6 @@ def train():
     x = x.to(device)
     y = y.to(device)
 
-
     # 训练
     model.train()
     epoch = 100
