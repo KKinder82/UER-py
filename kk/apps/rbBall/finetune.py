@@ -23,6 +23,7 @@ def train():
 
     #移动
     model.to(device)
+    lossFn.to(device)
     x = x.to(device)
     y = y.to(device)
 
