@@ -36,7 +36,7 @@ def test():
     device_id = os.environ["LOCAL_RANK"]
     print("  >> device_id: ", device_id)
     dist.init_process_group("nccl")
-    torch.cuda.set_device(device_id)
+    # torch.cuda.set_device(device_id)
 
     dist.destroy_process_group()
     return
