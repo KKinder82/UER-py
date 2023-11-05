@@ -35,6 +35,7 @@ class User_Dataset(data.Dataset):
 def test():
     x = torch.tensor([[1, 2, 3], [4, 5, 6]], dtype=torch.float32)
     x.to(1)
+    torch.cuda.set_device(1)
     return
 
     device_id = os.environ["LOCAL_RANK"]
