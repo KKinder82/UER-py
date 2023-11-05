@@ -43,7 +43,6 @@ def test():
     model = TestModel()
     model.to(device_id)
 
-    
     model = dist_nn.DistributedDataParallel(module=model, device_ids=[device_id])
     for i in tqdm.tqdm(loader):
         print(i)
