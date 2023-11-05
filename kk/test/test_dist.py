@@ -19,7 +19,7 @@ class TestModel(nn.Module):
 def test():
     x = torch.arange(10 * 5, dtype=torch.float32).view(10, 5)
     y = torch.ones(10, dtype=torch.float32)
-    dataset = zip(x, y)
+    dataset = list(zip(x, y))
     sampler = dist_data.DistributedSampler(dataset, num_replicas=2, rank=0)
     loader = data.DataLoader(dataset, batch_size=2, sampler=sampler)
     model = TestModel()
