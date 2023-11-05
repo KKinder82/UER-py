@@ -16,9 +16,9 @@ class TestModel(nn.Module):
         return self.net(x)
 
 
-class user_dataset(nn.utils.data.Dataset):
+class User_Dataset(nn.utils.data.Dataset):
     def __init__(self):
-        super(user_dataset, self).__init__()
+        super(User_Dataset, self).__init__()
         self.x = torch.arange(10 * 5, dtype=torch.float32).view(10, 5)
         self.y = torch.ones(10, dtype=torch.float32)
         self.data = list(zip(self.x, self.y))
@@ -31,9 +31,7 @@ class user_dataset(nn.utils.data.Dataset):
 
 
 def test():
-    x = torch.arange(10 * 5, dtype=torch.float32).view(10, 5)
-    y = torch.ones(10, dtype=torch.float32)
-    dataset = list(zip(x, y))
+    dataset = User_Dataset()
     sampler = dist_data.DistributedSampler(dataset, num_replicas=2, rank=0)
     loader = data.DataLoader(dataset, batch_size=2, sampler=sampler)
     model = TestModel()
