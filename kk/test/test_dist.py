@@ -34,6 +34,7 @@ class User_Dataset(data.Dataset):
 
 def test():
     device_id = os.environ["LOCAL_RANK"]
+    print("  >> device_id: ", device_id)
     dist.init_process_group(backend="nccl")
     torch.cuda.set_device(device=device_id)
 
