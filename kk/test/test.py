@@ -11,7 +11,39 @@ import sentencepiece as spm
 import random
 # from finetune.run_c3 import MultipleChoice
 
+def kk_gen():
+    try:
+        print("第一次运行")
+        x = yield 1
+        print("1.收到 x={}".format(x))
+        print("第二次运行")
+        x = yield 2
+        print("2.收到 x={}".format(x))
+    except Exception as e:
+        print("已经触发了 异常。")
+        x = yield 9
+        print("9.收到 x={}".format(x))
+    print("结束")
+    x = yield 10
+    print("10.收到 x={}".format(x))
+
+
 def main():
+    try:
+        gen = kk_gen()
+        x = gen.send(None)
+        print("out1.收到 x={}".format(x))
+        x = gen.throw(Exception("我是异常"))
+        print("out2.收到 x={}".format(x))
+        # x = gen.send("cc")
+        # print("3.收到 x={}".format(x))
+
+    except Exception as e:
+        print("out4.已经触发了 {}".format(type(e)))
+    exit()
+
+
+
     # 组标准化 对一个样本的几个特征（参数指定）的所有数据进行标准化 shape(n,c,d) -> 计算 n*c/个数 个均值与方差
     x = torch.arange(1 * 2 * 3, dtype=torch.float32).view(1, 2, 3) + 1
     x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 2, 2, 2, 2, ]], dtype=torch.float32)
