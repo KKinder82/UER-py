@@ -27,7 +27,7 @@ class User_Dataset(torch.utils.data.Dataset):
         return self.data[index]
 
     def __len__(self):
-        return len(data)
+        return len(self.data)
 
 
 def test():
