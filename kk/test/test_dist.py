@@ -38,9 +38,6 @@ def test():
     dist.init_process_group("nccl")
     torch.cuda.set_device(device_id)
 
-    dist.destroy_process_group()
-    return
-
     dataset = User_Dataset()
     sampler = dist_data.DistributedSampler(dataset)
     loader = data.DataLoader(dataset, batch_size=2, pin_memory=True, shuffle=True, sampler=sampler)
