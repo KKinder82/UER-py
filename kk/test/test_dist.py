@@ -40,7 +40,7 @@ def test():
 
     dataset = User_Dataset()
     sampler = dist_data.DistributedSampler(dataset)
-    loader = data.DataLoader(dataset, batch_size=2, pin_memory=True, shuffle=True, sampler=sampler)
+    loader = data.DataLoader(dataset, batch_size=2, pin_memory=True, shuffle=False, sampler=sampler)
     model = TestModel()
     model.to(device_id)
 
