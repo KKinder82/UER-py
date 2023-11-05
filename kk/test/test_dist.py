@@ -16,7 +16,7 @@ class TestModel(nn.Module):
         return self.net(x)
 
 
-class User_Dataset(nn.utils.data.Dataset):
+class User_Dataset(torch.utils.data.Dataset):
     def __init__(self):
         super(User_Dataset, self).__init__()
         self.x = torch.arange(10 * 5, dtype=torch.float32).view(10, 5)
