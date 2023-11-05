@@ -68,7 +68,8 @@ class Kk_Dataset(data.Dataset):
 
 
 class Kk_train(object):
-    def __init__(self, config: KKM_Config, model: Kk_Finetune, dataset: Kk_Dataset, dataset_val: Kk_Dataset, lossFn, optim):
+    def __init__(self, config: KKM_Config, model: Kk_Finetune, dataset: Kk_Dataset, dataset_val: Kk_Dataset,
+                 lossFn, optim):
         super(Kk_train, self).__init__()
         self.loss_value = 0.0
         self.last_loss = None
@@ -84,7 +85,7 @@ class Kk_train(object):
         self.optim = optim
 
     def _val(self):
-
+        pass
 
     def _epoch(self, iepoch: int):
         self.optim.zero_grad()
