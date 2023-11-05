@@ -35,8 +35,11 @@ class User_Dataset(data.Dataset):
 def test():
     device_id = os.environ["LOCAL_RANK"]
     print("  >> device_id: ", device_id)
-    dist.init_process_group(backend="nccl")
+    dist.init_process_group("nccl")
     torch.cuda.set_device(device_id)
+
+    dist.destroy_process_group()
+    return
 
     dataset = User_Dataset()
     sampler = dist_data.DistributedSampler(dataset)
