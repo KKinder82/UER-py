@@ -26,6 +26,8 @@ class KKM_Config(object):
         self.world_size = int(os.environ['WORLD_SIZE'])       # int(os.environ['WORLD_SIZE'])
         self.MASTER_ADDR = os.environ['MASTER_ADDR']          # os.environ['MASTER_ADDR']
         self.Master_PORT = os.environ['MASTER_PORT']          # os.environ['MASTER_PORT']
+        print("  >>> 分布式训练 <<< MASTER_ADDR:{}, Master_PORT:{} ,world_size:{}, rank:{}, local_rank:{}"
+              .format(self.MASTER_ADDR, self.Master_PORT, self.world_size, self.rand, self.local_rank))
         self.backend = "nccl"
         # 数据集
         self.shuffle = True
@@ -49,7 +51,6 @@ class Kk_Module(nn.Module):
 
     def init_weights(self):
         pass
-
 
 
 class Kk_Finetune(Kk_Module):
@@ -150,23 +151,26 @@ class Kk_train(object):
     def train(self):
         if self.config.gpu_count > 1:
             # 单机多卡 处理
-            dist.init_process_group(backend=self.config.backend, init_method="env://",  # init_method="store" 手工
-                                    world_size=self.config.world_size, rank=self.config.rank)
-            self.sampler = dist_data.DistributedSampler(self.dataset, rank=self.config.rank,
+            dist.init_process_group(backend=self.config.backend)
+            torch.cuda.set_device(self.config.local_rank)
+            self.model = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
+            self.model = torch.nn.parallel.DistributedDataParallel(self.model_src, device_ids=[self.config.local_rank],
+                                                                   output_device=self.config.local_rank)
+            # , init_method="env://",  # init_method="store" 手工
+            # world_size=self.config.world_size, rank=self.config.local_rank)
+            self.sampler = dist_data.DistributedSampler(self.dataset, rank=self.config.local_rank,
                                                         num_replicas=self.config.world_size)
             self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
                                               shuffle=False,
                                               sampler=self.sampler, num_workers=self.config.num_workers,
                                               pin_memory=self.config.pin_memory)
-            self.model = torch.nn.parallel.DistributedDataParallel(self.model_src, device_ids=[self.config.local_rank],
-                                                                   output_device=self.config.local_rank)
             self.sampler_val = dist_data.DistributedSampler(self.dataset_val, rank=self.config.rank,
                                                             num_replicas=self.config.world_size)
             self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=self.config.batch_size,
                                                   shuffle=False,
                                                   sampler=self.sampler_val, num_workers=self.config.num_workers,
                                                   pin_memory=self.config.pin_memory)
-            torch.cuda.set_device(self.config.local_rank)
+
         elif self.config.device == "cuda":
             # 单机单卡 处理
             torch.cuda.set_device(0)
@@ -184,7 +188,7 @@ class Kk_train(object):
                                               sampler=None, num_workers=self.config.num_workers,
                                               pin_memory=self.config.pin_memory)
             self.model = self.model_src     #.to(self.config.device)
-        for iepoch in tqdm(self.config.epoch, desc="Epoch"):
+        for iepoch in tqdm.tqdm(range(self.config.epoch), desc="Epoch"):
             self._epoch(iepoch)
             # 进行验证
             self._val()
@@ -200,7 +204,7 @@ class Kk_train(object):
 
 class DatasetTest(Kk_Dataset):
     def dataFn(self, idata):
-        return data[..., :88], data[..., 88:]
+        return data[..., 0:88], data[..., 88:]
 
 class ModuleTest(Kk_Module):
     def __init__(self, config: KKM_Config):
