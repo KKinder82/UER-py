@@ -117,7 +117,7 @@ class Kk_train(object):
 
     def _batch(self, iepoch, ibatch, idata):
         if "cuda" == self.config.device:
-            idata = idata.to(self.config.device)
+            idata = idata.to(self.config.local_rank)
         x, y = self.dataset.dataFn(idata)
             # x = x.to(self.config.device)
             # y = y.to(self.config.device)
@@ -208,7 +208,6 @@ class Kk_train(object):
             # 进行验证
             self._val()
 
-
         if self.config.gpu_count > 1:
             # 分布式处理
             dist.destroy_process_group()
@@ -240,7 +239,6 @@ class ModuleTest(Kk_Module):
 
 
 if __name__ == "__main__":
-
     config = KKM_Config()
     datas = torch.randn(1000, 89)
     dataset = DatasetTest(config, datas)
