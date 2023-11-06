@@ -236,11 +236,15 @@ class ModuleTest(Kk_Module):
         return o
 
 
+def add(x, y):
+    return x + y
+
+
 if __name__ == "__main__":
     datas = torch.zeros(1000, 89)
     datas.to(0)
     for i in datas:
-        i = i + 1
+        i = add(i, 1)
         print(i)
     exit()
 
