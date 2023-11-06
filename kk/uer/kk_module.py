@@ -236,19 +236,7 @@ class ModuleTest(Kk_Module):
         return o
 
 
-def add(x, y):
-    system = "cuda" if torch.cuda.is_available() else "cpu"
-    print(system)
-    return x + y
-
-
 if __name__ == "__main__":
-    datas = torch.zeros(1000, 89)
-    datas.to(0)
-    for i in datas:
-        i = add(i, 1)
-        print(i)
-    exit()
 
     config = KKM_Config()
     datas = torch.randn(1000, 89)
