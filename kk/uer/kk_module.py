@@ -27,7 +27,7 @@ class KKM_Config(object):
         self.MASTER_ADDR = os.environ['MASTER_ADDR']          # os.environ['MASTER_ADDR']
         self.Master_PORT = os.environ['MASTER_PORT']          # os.environ['MASTER_PORT']
         print("  >>> 分布式训练 <<< MASTER_ADDR:{}, Master_PORT:{} ,world_size:{}, rank:{}, local_rank:{}"
-              .format(self.MASTER_ADDR, self.Master_PORT, self.world_size, self.rand, self.local_rank))
+              .format(self.MASTER_ADDR, self.Master_PORT, self.world_size, self.rank, self.local_rank))
         self.backend = "nccl"
         # 数据集
         self.shuffle = True
@@ -148,6 +148,9 @@ class Kk_train(object):
             # need_optim = False
         # 进行
 
+    def __call__(self, *args, **kwargs):
+        print("请调用对象具体的方法。")
+
     def train(self):
         if self.config.gpu_count > 1:
             # 单机多卡 处理
@@ -234,5 +237,5 @@ if __name__ == "__main__":
     loss_fn = nn.MSELoss()
     optim = torch.optim.Adam(ModuleTest(config).parameters(), lr=0.001)
     trainer = Kk_train(config, model, dataset, dataset_val, loss_fn, optim)
-    trainer()
+    trainer.train()
 
