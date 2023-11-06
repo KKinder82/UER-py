@@ -11,7 +11,7 @@ from uer.utils.mask import mask_seq
 
 
 def merge_dataset(dataset_path, workers_num):
-    # Merge datasets.
+    # Merge data.
     dataset_writer = open(dataset_path, "wb")
     for i in range(workers_num):
         tmp_dataset_reader = open("dataset-tmp-" + str(i) + ".pt", "rb")
@@ -63,7 +63,7 @@ class Dataset(object):
         Start workers_num processes and each process deals with a part of data.
         """
         lines_num = count_lines(self.corpus_path)
-        print("Starting %d workers for building datasets ... " % workers_num)
+        print("Starting %d workers for building data ... " % workers_num)
         assert (workers_num >= 1)
         if workers_num == 1:
             self.worker(0, 0, lines_num)
@@ -76,7 +76,7 @@ class Dataset(object):
             pool.close()
             pool.join()
 
-        # Merge datasets.
+        # Merge data.
         merge_dataset(self.dataset_path, workers_num)
 
     def worker(self, proc_id, start, end):

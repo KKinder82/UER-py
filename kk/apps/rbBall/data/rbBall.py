@@ -33,6 +33,9 @@ def main():
         tdata += t
         # 121-136 Blue 处理 (共137位)
         tdata += kku.onehot(irow[9] - 1, 16)
+
+        # 将 irow 转为 list 对象
+        # tdata += irow[3:10].tolist()
         odata.append(tdata)
     odata = np.array(odata)
     np.save("./rbBall.npy", odata)
@@ -40,8 +43,8 @@ def main():
 def split_data():
     fdata = np.load("./rbBall.npy")
     np.save("./rbBall_train.npy", fdata[:888])
-    np.save("./rbBall_val.npy", fdata[888:888+166])
-    np.save("./rbBall_test.npy", fdata[888+166:])
+    np.save("./rbBall_val.npy", fdata[888:888+100])
+    np.save("./rbBall_test.npy", fdata[888+100:])
 
 if __name__ == "__main__":
 
@@ -51,5 +54,7 @@ if __name__ == "__main__":
 
     # fdata = np.load("./rbBall.npy")
     # print(fdata.shape)
+    # print(fdata[0:2, ...])
+    # print(fdata[0:2, 88:])
 
     print(" - Over -")

@@ -2,14 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import kk.uer.kk_module as kkm
+import kk.apps.kk_app as kka
 import math
 
 
-class Kk_FFNLayer(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, in_feather: int, out_feathers: int,
+class KkFFNLayer(kka.KkModule):
+    def __init__(self, config: kka.KkmConfig, in_feather: int, out_feathers: int,
                  norm: bool = False, inner_feathers: int = 128):
-        super(Kk_FFNLayer, self).__init__(config)
+        super(KkFFNLayer, self).__init__(config)
         self.FFN = nn.Sequential(nn.Linear(in_feather, inner_feathers),
                                  nn.ReLU(),
                                  nn.Linear(inner_feathers, out_feathers))
@@ -24,41 +24,50 @@ class Kk_FFNLayer(kkm.Kk_Module):
         return o
 
 
-class Kk_FeatherLayer(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, sentence_length: int, out_feathers: int, norm: bool = False):
-        super(Kk_FeatherLayer, self).__init__(config)
-        self.Linear = nn.Linear(sentence_length, sentence_length * out_feathers, bias=False if norm else True)
-        self.Norm = None
-        if norm:
-            self.Norm = nn.LayerNorm(out_feathers)
+class KkClassifierLayer(kka.KkModule):
+    def __init__(self, config: kka.KkmConfig, in_feather: int, classes: int, classifierMode:int = 1,
+                 norm: bool = False, loops: int = 0, inner_feathers: int = 128):
+        super(KkClassifierLayer, self).__init__(config)
+        self.FFN0 = nn.Sequential(nn.Linear(in_feather, inner_feathers),
+                                  nn.ReLU())
+        self.FFNx= nn.ModuleList([nn.Sequential(nn.Linear(inner_feathers, inner_feathers), nn.ReLU())
+                                  for _ in range(loops)])
+        self.FFNe = nn.Linear(inner_feathers, classes)
+
+        self.norm = norm
+        if classifierMode == 1:
+            self.Norm = nn.Softmax(-1)
+        else:
+            self.Norm = nn.Sigmoid()
+
+    def forward(self, x):
+        o = self.FFN0(x)
+        for ffn in self.FFNx:
+            o = ffn(o)
+        o = self.FFNe(o)
+        return self.Norm(o)
+
+class KkExtendlayer(kka.KkModule):
+    def __init__(self, config: kka.KkmConfig, pos: int, in_feather, extend_feather: int, norm: bool = False):
+        super(KkExtendlayer, self).__init__(config)
+        self.pos = pos
+        self.norm = norm
+        self.Linear = nn.Linear(in_feather, in_feather * extend_feather, bias=False if norm else True)
+        if self.norm:
+            self.Norm = nn.LayerNorm(in_feather * extend_feather)
 
     def forward(self, x):
         o = self.Linear(x)
+        if self.norm:
+            o = self.Norm(o)
         o = o.view(*x.shape, -1)
-        if self.Norm is not None:
-            o = self.Norm(o)
-        return o
-
-
-class Kk_ChannelLayer(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, in_feather: int, channel_size: int, norm: bool = False):
-        super(Kk_ChannelLayer, self).__init__(config)
-        self.channel_size = channel_size
-        self.Linear = nn.Linear(in_feather, in_feather * channel_size, bias=False if norm else True)
-        self.Norm = None
-        if norm:
-            self.Norm = nn.LayerNorm(in_feather * channel_size)
-
-    def forward(self, x):
-        o = self.Linear(x)
-        if self.Norm is not None:
-            o = self.Norm(o)
-        o = o.view(*x.shape[0:-1], self.channel_size, -1)
-        return o
+        if self.pos is None:
+            return o
+        return o.reshape(*x.shape[:self.pos], -1, *x.shape[self.pos:])
 
 
 if __name__ == "__main__":
     x = torch.arange(2 * 3 * 4, dtype=torch.float32).view(2, 3, 4)
-    channel_layer = Kk_ChannelLayer(None, 4, 10)
+    channel_layer = KkExtendlayer(None, -2, 4, 6)
     y = channel_layer(x)
     print(y.shape)

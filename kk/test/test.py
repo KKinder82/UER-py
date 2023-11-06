@@ -5,11 +5,15 @@ from torch.optim.lr_scheduler import LambdaLR
 import copy
 import argparse
 from argparse import Namespace
-#from uer.layers.cross_layers import CrossVector
-#from kk.utils import *
+# from uer.layers.cross_layers import CrossVector
+# from kk.utils import *
 import sentencepiece as spm
 # from uer.utils.tokenizers import *
 import random
+import numpy as np
+import kk.kk_utils as kku
+
+
 # from finetune.run_c3 import MultipleChoice
 
 def kk_gen():
@@ -29,7 +33,101 @@ def kk_gen():
     print("10.收到 x={}".format(x))
 
 
+
+
+
 def main():
+    o = torch.tensor([[5, 2, 1, 4, 1], [3, 9, 2, 1, 5]])
+    y = torch.tensor([[0, 1, 1, 0, 1], [0, 1, 1, 0, 1]])
+    blocks = [3]
+    o_y = torch.zeros_like(o)
+    _last = 0
+    for i, iblock in enumerate(blocks):
+        _max, _index = torch.topk(o[..., _last:iblock], 2, dim=-1)
+        kku.tensor_fill(o_y[..., _last:iblock], _index, 1)
+        _last += iblock
+    if _last < y.size(-1):
+        _max, _index = torch.topk(o[..., _last:], 1, dim=-1)
+        kku.tensor_fill(o_y[..., _last:], _index, 1)
+    print(o_y)
+    _f = (o_y - y) != 0
+    loss = torch.sum(torch.pow(o[_f] - y[_f], 2))
+    print(loss)
+    _count = _f.count_nonzero()
+    print(_count)
+    exit(0)
+
+
+    # 排序
+    x = torch.randint(0, 100, (2, 2, 5))
+    a = torch.argsort(x, dim=-1, descending=True)
+    # 取出 x 中前3个最大的元素
+    b = torch.topk(x, 3, dim=-1, largest=True)
+
+    print(a[...,0:2])
+    print(x[a[...,0:2]])
+    exit()
+
+    # 梯度
+    a = 2
+    x = torch.tensor(12, requires_grad=True, dtype=torch.float32)
+    # z 不是叶子结点，没有梯度值, 有梯度函数
+    z = (a * x) ** 2 + 10
+    y = 3 * z + 12
+    y.backward()
+    print(" ----------- >>> x <<< " + "-" * 100)
+    print(x)
+    print(x.grad)
+    # print(" ----------- >>> z <<< " + "-" * 100)
+    # print(z)
+    # print(z.grad)
+    exit()
+
+    _x = np.arange(10) + 1
+    print(_x[[2, 3]])
+    _y = np.delete(_x,  [2, 3])
+    print(_x)
+    exit()
+
+    _x = np.arange(200)
+    batch_size = 9
+    data_count = len(_x)
+    _diff = batch_size - data_count % batch_size
+    _v = np.random.randint(0, data_count - data_count % batch_size, _diff)
+    print(_v)
+    # print(_x)
+    indexes = np.array([1, 2, 3], dtype=_x.dtype)
+    # 把 indexes 与 _v 两个 ndarray 合并起来
+
+
+    # indexes = np.concatenate((indexes, _v))
+    _y = np.random.randint(0, 10, 2)
+    _y = np.concatenate((_x, _v))
+    _y = np.hstack((_x, _v))
+
+    print(_y)
+
+    exit()
+
+
+
+    x = torch.tensor([[1, 2, 3], [1, 2, 3]], dtype=torch.float32)
+    x = x.view(-1, x.size(-1))
+    # print(x[-1, :])
+    print(x[0:10, :])
+    exit()
+
+
+    o = torch.tensor([[1, 2, 3], [5, 6, 7]], dtype=torch.float32)
+    y = torch.tensor([[0, 0, 1], [5, 6, 7]], dtype=torch.float32)
+
+    print(" >>> L1Loss <<< ")  # 1/n * sum((o-y)^2)
+    loss_fn = nn.L1Loss()
+    loss = loss_fn(o, y)
+    print(loss)
+    print((o - y).abs().mean())
+    print("-" * 100)
+
     o = torch.tensor([[1, 2, 3], [5, 6, 7]], dtype=torch.float32)
     y = torch.tensor([[0, 0, 1], [5, 6, 7]], dtype=torch.float32)
 
@@ -37,7 +135,24 @@ def main():
     loss_fn = nn.MSELoss()
     loss = loss_fn(o, y)
     print(loss)
-    print((o-y).pow(2).mean())
+    print((o - y).pow(2).mean())
+    print("-" * 100)
+
+    o = torch.tensor([[1, 2, 3], [5, 6, 7]], dtype=torch.float32)
+    y = torch.tensor([[0.9, 2.1, 5], [5, 6, 7]], dtype=torch.float32)
+
+    print(" >>> SmoothL1Loss <<< ")  # 1/n * sum((o-y)^2)
+    loss_fn = nn.SmoothL1Loss()
+    loss = loss_fn(o, y)
+    print(loss)
+    sublist = (o - y).abs()
+    f = sublist < 1.0
+    sublist[~f] = sublist[~f] - 0.5
+    sublist[f] = sublist[f].pow(2) * 0.5
+    print(sublist.mean())
+    # sublist = torch.tensor(sublist)
+    # print(sublist.mean())
+
     print("-" * 100)
 
     o = torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.3, 0.4]], dtype=torch.float32)
@@ -47,6 +162,17 @@ def main():
     loss = loss_fn(o, y)
     print(loss)
     loss_user = -(y * torch.log(o) + (1 - y) * torch.log(1 - o)).mean()
+    print(loss_user)
+    print("-" * 100)
+
+    o = torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.3, 0.4]], dtype=torch.float32)
+    y = torch.tensor([[0, 0, 1], [1, 0, 0]], dtype=torch.float32)
+    print(" >>> BCEWithLogitsLoss <<< ")
+    loss_fn = nn.BCEWithLogitsLoss()
+    loss = loss_fn(o, y)
+    print(loss)
+    o = o.sigmoid()
+    loss_user = nn.BCELoss()(o, y)
     print(loss_user)
     print("-" * 100)
 
@@ -71,6 +197,17 @@ def main():
     print(loss_user)
     print("-" * 100)
 
+    o = torch.tensor([[0.8, 0.1, 0.1], [0.8, 0.1, 0.1]], dtype=torch.float32)
+    y = torch.tensor([[0.8, 0.1, 0.1], [0.8, 0.1, 0.1]], dtype=torch.float32)
+    print(" >>> KLDivLoss <<< ")
+    loss_fn = nn.KLDivLoss(reduction="batchmean")
+    loss = loss_fn(o, y)
+    print(loss)
+    loss_user = (y * ( y.log() - o.log())).sum(1).mean()
+    # loss_user = (y * (y/o).log()).sum(1) # .mean()
+    print(loss_user)
+    print("-" * 100)
+
     exit()
 
     try:
@@ -86,20 +223,18 @@ def main():
         print("out4.已经触发了 {}".format(type(e)))
     exit()
 
-
-
     # 组标准化 对一个样本的几个特征（参数指定）的所有数据进行标准化 shape(n,c,d) -> 计算 n*c/个数 个均值与方差
     x = torch.arange(1 * 2 * 3, dtype=torch.float32).view(1, 2, 3) + 1
     x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 2, 2, 2, 2, ]], dtype=torch.float32)
     x = x.view(2, 3, 2)
-    norm = nn.GroupNorm(1 ,3)   # 指定组数、通道数
+    norm = nn.GroupNorm(1, 3)  # 指定组数、通道数
     y = norm(x)
     # print(x)
     print(y)
-    print('-'*100)
+    print('-' * 100)
     x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 3, 2, 2, 2, ]], dtype=torch.float32)
     x = x.view(2, 3, 2)
-    norm = nn.GroupNorm(1 ,3)   # 指定组数、通道数
+    norm = nn.GroupNorm(1, 3)  # 指定组数、通道数
     y = norm(x)
     # print(x)
     print(y)
@@ -114,14 +249,14 @@ def main():
     y = norm(x)
     # print(x)
     print(y)
-    print('-'*100)
+    print('-' * 100)
     x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 3, 2, 2, 2, ]], dtype=torch.float32)
     x = x.view(2, 2, 3)
     norm = nn.InstanceNorm1d(1)
     y = norm(x)
     # print(x)
     print(y)
-    print('-'*100)
+    print('-' * 100)
     x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 3, 2, 2, 2, ]], dtype=torch.float32)
     x = x.view(2, 2, 3)
     norm = nn.LayerNorm(3)
@@ -140,7 +275,7 @@ def main():
     # print(x)
     print(y)
 
-    print('-'*100)
+    print('-' * 100)
 
     x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 3, 2, 2, 2, ]], dtype=torch.float32)
     x = x.view(2, 2, 3)
@@ -160,7 +295,7 @@ def main():
     # print(x)
     print(y)
 
-    print('-'*100)
+    print('-' * 100)
 
     x = torch.tensor([[1, 2, 3, 2, 3, 5, ], [2, 2, 5, 2, 2, 2, ]], dtype=torch.float32)
     x = x.view(2, 2, 3)
@@ -171,15 +306,12 @@ def main():
 
     exit(0)
 
-
-    x = [i for i in range(1,5)]
+    x = [i for i in range(1, 5)]
     print(x)
     exit()
 
-
-
     x = torch.tensor([])
-    
+
     # 创建一个示例张量
     x = torch.tensor([[1, 2, 3],
                       [4, 5, 6],
@@ -225,8 +357,6 @@ def main():
 
     # 创建目标设备（设备0）上的张量
 
-
-
     x = torch.arange(3, 23).float().reshape(-1, 5)
     print(x)
     x[:, 2] = 100
@@ -237,7 +367,6 @@ def main():
     x = nn.LogSoftmax(dim=-1)(x)
     print(x)
     y = torch.tensor([1, 2, 1, 1])
-
 
     loss = nn.NLLLoss(reduction="mean")
     if torch.cuda.device_count() > 1:
@@ -308,7 +437,6 @@ def main():
     #         f.write(i + "\n")
     exit()
 
-
     def _is_chinese_char(cp):
         """Checks whether CP is the codepoint of a CJK character."""
         # This defines a "chinese character" as anything in the CJK Unicode block:
@@ -348,9 +476,6 @@ def main():
     out = _tokenize_chinese_chars(input)
     print(input)
     exit()
-
-
-
 
     #
     # args = load_argsconfig("test.txt")
@@ -397,7 +522,7 @@ def main():
     print(x_out)
     exit()
 
-    x = torch.arange(3,8).float().reshape(-1, 5)
+    x = torch.arange(3, 8).float().reshape(-1, 5)
     x = x.unsqueeze(1)
     print(x)
     x_t = x.transpose(-1, -2)
@@ -409,10 +534,9 @@ def main():
     x = torch.cat([_one, x], dim=-1)
     print(x)
 
-    x_out = torch.bmm(x_t, x )
+    x_out = torch.bmm(x_t, x)
     print(x_out)
     exit()
-
 
     class aclass():
         def __len__(self):
@@ -422,7 +546,7 @@ def main():
             yield self.Status
             raise StopIteration
 
-        def __init__(self, status:int):
+        def __init__(self, status: int):
             self.Status = status
 
     class tclass():
@@ -441,7 +565,7 @@ def main():
     print(stream_0_args)
     exit(0)
 
-    from  uer.layers.relative_position_embedding import RelativePositionEmbedding
+    from uer.layers.relative_position_embedding import RelativePositionEmbedding
     encode = torch.arange(20).float().reshape(4, 5)
     decode = torch.arange(20).float().reshape(4, 5)
     layer = RelativePositionEmbedding(2)
@@ -449,10 +573,9 @@ def main():
     print(x)
     exit(0)
 
-
     a = torch.arange(5).reshape(5, 1)
     b = torch.arange(5).reshape(1, 5)
-    print( a - b)
+    print(a - b)
     exit(0)
 
     a = torch.arange(1, 13).float().reshape(3, 4)
@@ -462,13 +585,13 @@ def main():
     print(l * 3)
     exit(0)
 
-    a : torch.tensor = torch.arange(1, 13).float().reshape(3, 4)
+    a: torch.tensor = torch.arange(1, 13).float().reshape(3, 4)
     print(a.is_contiguous())
-    print("a",a.is_contiguous(), id(a), id(a.untyped_storage()))
+    print("a", a.is_contiguous(), id(a), id(a.untyped_storage()))
 
-    print( "-"*60)
+    print("-" * 60)
     b = a[1:, 0:-1:2]
-    print("b",b.is_contiguous(), id(b), id(b.untyped_storage()))
+    print("b", b.is_contiguous(), id(b), id(b.untyped_storage()))
 
     b.contiguous()
     print("b", b.is_contiguous(), id(b), id(b.untyped_storage()))
@@ -482,7 +605,6 @@ def main():
     exit(0)
 
     # self.encoder_0 = str2encoder[stream_0_args.encoder](stream_0_args)
-
 
     hidden_size = 5
     conv_b1 = nn.Parameter(torch.randn(1, hidden_size, 1, 1))
@@ -502,7 +624,7 @@ def main():
             n += 1
     ds = [n for n in cs]
     cs = [chr(n) for n in cs]
-    t = dict(zip( cs, ds))
+    t = dict(zip(cs, ds))
     print(t)
     exit(0)
 
@@ -531,8 +653,7 @@ def main():
     exit()
 
     t = 1
-    fun1 = lambda t : t * 2
-
+    fun1 = lambda t: t * 2
 
     x = torch.tensor([1, 2, 3]).float()
     y = torch.tensor([1230]).float()
@@ -580,6 +701,7 @@ def main():
         x = fun1()
         print(x)
         t += 1
+
 
 if __name__ == "__main__":
     main()
