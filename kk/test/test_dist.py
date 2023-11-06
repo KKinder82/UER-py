@@ -36,19 +36,21 @@ def test():
     device_id = int(os.environ["LOCAL_RANK"])
     print("  >> device_id: ", device_id)
     dist.init_process_group("nccl")
-    torch.cuda.set_device(device_id)
+    try:
+        torch.cuda.set_device(device_id)
 
-    dataset = User_Dataset()
-    sampler = dist_data.DistributedSampler(dataset)
-    loader = data.DataLoader(dataset, batch_size=2, pin_memory=True, shuffle=False, sampler=sampler)
-    model = TestModel()
-    model.to(device_id)
+        dataset = User_Dataset()
+        sampler = dist_data.DistributedSampler(dataset)
+        loader = data.DataLoader(dataset, batch_size=2, pin_memory=True, shuffle=False, sampler=sampler)
+        model = TestModel()
+        model.to(device_id)
 
-    model = dist_nn.DistributedDataParallel(module=model, device_ids=[device_id])
-    for i in tqdm.tqdm(loader):
-        print(i)
-        break
-    dist.destroy_process_group()
+        model = dist_nn.DistributedDataParallel(module=model, device_ids=[device_id])
+        for j in range(100):
+            for i in tqdm.tqdm(loader):
+                print(i)
+    finally:
+        dist.destroy_process_group()
 
 
 if __name__ == "__main__":

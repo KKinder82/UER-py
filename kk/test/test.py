@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.optim.lr_scheduler import LambdaLR
 import copy
 import argparse
@@ -29,6 +30,49 @@ def kk_gen():
 
 
 def main():
+    o = torch.tensor([[1, 2, 3], [5, 6, 7]], dtype=torch.float32)
+    y = torch.tensor([[0, 0, 1], [5, 6, 7]], dtype=torch.float32)
+
+    print(" >>> MSELoss <<< ")  # 1/n * sum((o-y)^2)
+    loss_fn = nn.MSELoss()
+    loss = loss_fn(o, y)
+    print(loss)
+    print((o-y).pow(2).mean())
+    print("-" * 100)
+
+    o = torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.3, 0.4]], dtype=torch.float32)
+    y = torch.tensor([[0, 0, 1], [1, 0, 0]], dtype=torch.float32)
+    print(" >>> BCELoss <<< ")
+    loss_fn = nn.BCELoss()
+    loss = loss_fn(o, y)
+    print(loss)
+    loss_user = -(y * torch.log(o) + (1 - y) * torch.log(1 - o)).mean()
+    print(loss_user)
+    print("-" * 100)
+
+    o = torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.3, 0.4]], dtype=torch.float32)
+    y = torch.tensor([[0, 0.1, 0.9], [0.1, 0.8, 0.1]], dtype=torch.float32)
+    print(" >>> CrossEntropyLoss <<< ")
+    loss_fn = nn.CrossEntropyLoss()
+    loss = loss_fn(o, y)
+    print(loss)
+    o = F.softmax(o, 1)
+    loss_user = -(y * torch.log(o)).sum(1).mean()
+    print(loss_user)
+    print("-" * 100)
+
+    o = torch.tensor([[2, 0, 0], [0, 0, 4], [0, 1, 0]], dtype=torch.float32)
+    y = torch.tensor([0, 2, 1], dtype=torch.long)
+    print(" >>> NLLLoss <<< ")
+    loss_fn = nn.NLLLoss()
+    loss = loss_fn(o, y)
+    print(loss)
+    loss_user = -(o[y]).sum(1).mean()
+    print(loss_user)
+    print("-" * 100)
+
+    exit()
+
     try:
         gen = kk_gen()
         x = gen.send(None)
