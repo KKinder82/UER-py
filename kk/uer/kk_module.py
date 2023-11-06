@@ -207,7 +207,7 @@ class Kk_train(object):
 
 class DatasetTest(Kk_Dataset):
     def dataFn(self, idata):
-        return data[..., 0:88], data[..., 88:]
+        return idata[..., 0:88], idata[..., 88:]
 
 class ModuleTest(Kk_Module):
     def __init__(self, config: KKM_Config):
