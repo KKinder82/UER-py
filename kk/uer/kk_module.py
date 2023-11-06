@@ -119,6 +119,7 @@ class Kk_train(object):
         x, y = self.dataset.dataFn(idata)
         if "cuda" == self.config.device:
             x = x.to(self.config.device)
+            y = y.to(self.config.device)
         o = self.model(x)
         print(x.shape)
         print(y.shape)
