@@ -116,10 +116,11 @@ class Kk_train(object):
         return loss.item()
 
     def _batch(self, iepoch, ibatch, idata):
-        x, y = self.dataset.dataFn(idata)
         if "cuda" == self.config.device:
-            x = x.to(self.config.device)
-            y = y.to(self.config.device)
+            idata = idata.to(self.config.device)
+        x, y = self.dataset.dataFn(idata)
+            # x = x.to(self.config.device)
+            # y = y.to(self.config.device)
         o = self.model(x)
         print(x.shape)
         print(y.shape)
@@ -168,6 +169,7 @@ class Kk_train(object):
             self.model = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
             self.model = torch.nn.parallel.DistributedDataParallel(self.model_src, device_ids=[self.config.local_rank],
                                                                    output_device=self.config.local_rank)
+            self.lossFn.to(self.config.local_rank)
             # , init_method="env://",  # init_method="store" 手工
             # world_size=self.config.world_size, rank=self.config.local_rank)
             self.sampler = dist_data.DistributedSampler(self.dataset, rank=self.config.local_rank,
@@ -186,6 +188,7 @@ class Kk_train(object):
         elif self.config.device == "cuda":
             # 单机单卡 处理
             torch.cuda.set_device(0)
+            self.lossFn.to(self.config.local_rank)
             # self.sampler = None
             self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
                                               shuffle=self.config.shuffle,
