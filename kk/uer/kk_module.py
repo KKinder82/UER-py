@@ -1,6 +1,7 @@
 import os
 
 import torch
+import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.utils.data as data
 import torch.nn.functional as F
@@ -8,6 +9,7 @@ import torch.nn.functional as F
 import torch.distributed as dist
 import torch.utils.data.distributed as dist_data
 import torch.nn.parallel.distributed as dist_nn
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 import numpy as np
 import math
@@ -15,8 +17,10 @@ import logging as log
 import tqdm
 
 
-class KKM_Config(object):
+class KkmConfig(object):
     def __init__(self):
+        # 日志配置
+        log.basicConfig(level=log.INFO, format="%(asctime)s %(levelname)s %(message)s")
         # GPU 训练
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.gpu_count = torch.cuda.device_count()
@@ -31,8 +35,9 @@ class KKM_Config(object):
         self.backend = "nccl"
         # 数据集
         self.shuffle = True
-        self.num_workers = 2 * self.world_size
+        self.num_workers = self.world_size
         self.pin_memory = True
+        self.dataset_toGPU = True
         # 训练
         self.batch_size = 10
         self.epoch = 100
@@ -40,32 +45,32 @@ class KKM_Config(object):
         self.save_checkpoint_steps = 20
         self.report_steps = 1
         self.Checkpoint_Last = "rbBall_last.pth"
-        self.Checkpoint_Best= "rbBall_best.pth"
+        self.Checkpoint_Best = "rbBall_best.pth"
 
 
-
-class Kk_Module(nn.Module):
-    def __init__(self, config: KKM_Config):
-        super(Kk_Module, self).__init__()
+class KkModule(nn.Module):
+    def __init__(self, config: KkmConfig):
+        super(KkModule, self).__init__()
         self.config = config
 
     def init_weights(self):
         pass
 
 
-class Kk_Finetune(Kk_Module):
-    def __init__(self, config: KKM_Config):
-        super(Kk_Finetune, self).__init__(config)
+class KkInference(KkModule):
+    def __init__(self, config: KkmConfig):
+        super(KkInference, self).__init__(config)
 
 
-class Kk_Dataset(data.Dataset):
-    def __init__(self, config: KKM_Config, in_data=[], x_len: int = -1):
-        super(Kk_Dataset, self).__init__()
-        self.x_len = x_len
+class KkDataset(data.Dataset):
+    def __init__(self, config: KkmConfig, in_data=[], x_len: int = -1):
+        super(KkDataset, self).__init__()
+        self.config = config
         self.data = in_data
+        self.x_len = x_len
 
     def __getitem__(self, index):
-        return self.data[index]
+        return self.data[index, ...]
 
     def __len__(self):
         return len(self.data)
@@ -74,11 +79,11 @@ class Kk_Dataset(data.Dataset):
         return idata[..., 0:self.x_len], idata[..., self.x_len:]
 
 
-class Kk_train(object):
-    def __init__(self, config: KKM_Config,
-                 model: Kk_Finetune, dataset: Kk_Dataset, dataset_val: Kk_Dataset,
+class KkTrain(object):
+    def __init__(self, config: KkmConfig,
+                 model: KkInference, dataset: KkDataset, dataset_val: KkDataset,
                  lossFn, optim):
-        super(Kk_train, self).__init__()
+        super(KkTrain, self).__init__()
         self.loss_value = 0.0
         self.last_loss = None
         self.config = config
@@ -92,40 +97,33 @@ class Kk_train(object):
         self.lossFn = lossFn
         self.optim = optim
 
-    def _val(self):
+    def _val(self, iepoch: int):
         all_loss = 0
         for ibatch, idata in enumerate(self.dataLoader_val):
             loss = self._batch_val(0, ibatch, idata)
-            all_loss += loss
-        if ibatch % self.config.report_steps == 0:
-            log.info("  >> 验证, batch {}/{}, loss:{}".format(ibatch, len(self.dataLoader_val),
-                                                                 loss))
+            if iepoch == 0:
+                all_loss = loss
+            else:
+                # all_loss = all_loss * iepoch / (iepoch + 1) + loss / (iepoch + 1)
+                all_loss = all_loss + (loss - all_loss) / (iepoch + 1)
+        print("\n  >> 验证, epoch {}/{}, loss:{}".format(iepoch + 1, self.config.epoch, all_loss))
         pass
 
     def _batch_val(self, iepoch, ibatch, idata):
-        x, y = self.dataset_val.dataFn(idata)
-        if "cuda" == self.config.device:
-            x = x.to(self.config.device)
-        o = self.model(x)
-        print(x.shape)
-        print(y.shape)
-        print(o.shape)
-        print("-" * 100)
-        loss = self.lossFn(o, y)
-        # loss.backward()
-        return loss.item()
+        with torch.no_grad():
+            if "cuda" == self.config.device:
+                idata = idata.to(self.config.device)
+            x, y = self.dataset_val.dataFn(idata)
+            o = self.model(x)
+            loss = self.lossFn(o, y)
+            # loss.backward()
+            return loss.item()
 
     def _batch(self, iepoch, ibatch, idata):
         if "cuda" == self.config.device:
             idata = idata.to(self.config.local_rank)
         x, y = self.dataset.dataFn(idata)
-            # x = x.to(self.config.device)
-            # y = y.to(self.config.device)
         o = self.model(x)
-        print(x.shape)
-        print(y.shape)
-        print(o.shape)
-        print("-" * 100)
         loss = self.lossFn(o, y)
         loss.backward()
         return loss.item()
@@ -134,13 +132,12 @@ class Kk_train(object):
         self.optim.zero_grad()
         need_optim = False
         for ibatch, idata in enumerate(self.dataLoader):
-
             loss = self._batch(iepoch, ibatch, idata)
             need_optim = True
-            if ibatch % self.config.report_steps == 0:
-                log.info("  >> Epoch {}/{}, batch {}/{}, loss:{}".format(iepoch, self.config.epoch,
-                                                                         ibatch, len(self.dataLoader),
-                                                                         loss))
+            # if ibatch % self.config.report_steps == 0:
+            #     log.info("  >> Epoch {}/{}, batch {}/{}, loss:{}".format(iepoch, self.config.epoch,
+            #                                                              ibatch, len(self.dataLoader),
+            #                                                              loss))
             if ibatch % self.config.accumulation_steps == 0:
                 self.optim.step()
                 self.optim.zero_grad()
@@ -152,11 +149,11 @@ class Kk_train(object):
             if self.last_loss is None or self.last_loss > loss:
                 self.last_loss = loss
                 torch.save(self.model, "rbBall_best.pth".format(iepoch))
+
         if need_optim:
             self.optim.step()
             self.optim.zero_grad()
-            # need_optim = False
-        # 进行
+            need_optim = False
 
     def __call__(self, *args, **kwargs):
         print("请调用对象具体的方法。")
@@ -164,11 +161,12 @@ class Kk_train(object):
     def train(self):
         if self.config.gpu_count > 1:
             # 单机多卡 处理
-            dist.init_process_group(backend=self.config.backend)
+            dist.init_process_group(backend=self.config.backend, init_method="env://",
+                                    world_size=self.config.world_size, rank=self.config.rank)
             torch.cuda.set_device(self.config.local_rank)
             self.model = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
-            self.model = torch.nn.parallel.DistributedDataParallel(self.model_src, device_ids=[self.config.local_rank],
-                                                                   output_device=self.config.local_rank)
+            self.model = DDP(self.model_src, device_ids=[self.config.local_rank],
+                             output_device=self.config.local_rank)
             self.lossFn.to(self.config.local_rank)
             # , init_method="env://",  # init_method="store" 手工
             # world_size=self.config.world_size, rank=self.config.local_rank)
@@ -188,25 +186,38 @@ class Kk_train(object):
         elif self.config.device == "cuda":
             # 单机单卡 处理
             torch.cuda.set_device(0)
+            self.model = self.model_src.to(self.config.local_rank)
             self.lossFn.to(self.config.local_rank)
-            # self.sampler = None
+            self.sampler = data.SequentialSampler(self.dataset)
             self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
-                                              shuffle=self.config.shuffle,
-                                              sampler=None, num_workers=self.config.num_workers,
+                                              shuffle=False,
+                                              sampler=self.sampler, num_workers=self.config.num_workers,
                                               pin_memory=self.config.pin_memory)
-            self.model = self.model_src.to(self.config.device)
+
+            self.sampler_val = data.SequentialSampler(self.dataset_val)
+            self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=self.config.batch_size,
+                                                  shuffle=False,
+                                                  sampler=self.sampler_val, num_workers=self.config.num_workers,
+                                                  pin_memory=self.config.pin_memory)
         else:
             # cpu
-            # self.sampler = None
+            self.model = self.model_src  # .to(self.config.device)
+            # self.lossFn.to(self.config.local_rank)
+            self.sampler = data.SequentialSampler(self.dataset)
             self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
-                                              shuffle=self.config.shuffle,
-                                              sampler=None, num_workers=self.config.num_workers,
+                                              shuffle=False,
+                                              sampler=self.sampler, num_workers=self.config.num_workers,
                                               pin_memory=self.config.pin_memory)
-            self.model = self.model_src     #.to(self.config.device)
+            self.sampler_val = data.SequentialSampler(self.dataset_val)
+            self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=self.config.batch_size,
+                                                  shuffle=False,
+                                                  sampler=self.sampler_val, num_workers=self.config.num_workers,
+                                                  pin_memory=self.config.pin_memory)
+
         for iepoch in tqdm.tqdm(range(self.config.epoch), desc="Epoch"):
             self._epoch(iepoch)
             # 进行验证
-            # self._val()
+            self._val(iepoch)
 
         if self.config.gpu_count > 1:
             # 分布式处理
@@ -216,12 +227,8 @@ class Kk_train(object):
             torch.cuda.empty_cache()
 
 
-class DatasetTest(Kk_Dataset):
-    def dataFn(self, idata):
-        return idata[..., 0:88], idata[..., 88:]
-
-class ModuleTest(Kk_Module):
-    def __init__(self, config: KKM_Config):
+class ModuleTest(KkModule):
+    def __init__(self, config: KkmConfig):
         super(ModuleTest, self).__init__(config)
         self.net = nn.Sequential(
             nn.Linear(88, 880),
@@ -238,15 +245,47 @@ class ModuleTest(Kk_Module):
         return o
 
 
-if __name__ == "__main__":
-    config = KKM_Config()
+def torchrun():
+    config = KkmConfig()
     datas = torch.randn(1000, 89)
-    dataset = DatasetTest(config, datas)
+    # print(datas[:, 0:88].sum(dim=1) / 3.1415926)
+    datas[:, 88] = datas[:, 0:88].sum(dim=1) / 3.1415926
+    dataset = KkDataset(config, datas)
     datas_val = torch.randn(80, 89)
-    dataset_val = DatasetTest(config, datas_val)
+    datas_val[:, 88] = datas_val[:, 0:88].sum(dim=1) / 3.1415926
+    dataset_val = KkDataset(config, datas_val)
     model = ModuleTest(config)
     loss_fn = nn.MSELoss()
     optim = torch.optim.Adam(ModuleTest(config).parameters(), lr=0.001)
-    trainer = Kk_train(config, model, dataset, dataset_val, loss_fn, optim)
+    trainer = KkTrain(config, model, dataset, dataset_val, loss_fn, optim)
     trainer.train()
+
+
+def python_spawn_fn(rank: int, world_size: int):
+    os.environ['RANK'] = str(rank)
+    os.environ['LOCAL_RANK'] = str(rank)
+    os.environ['WORLD_SIZE'] = str(world_size)
+    os.environ['MASTER_ADDR'] = "127.0.0.1"
+    os.environ['MASTER_PORT'] = "16666"
+    torchrun()
+
+
+def python_spawn():
+    world_size = torch.cuda.device_count()
+    mp.spawn(python_spawn_fn, args=(world_size,), nprocs=world_size)
+
+def python():
+    os.environ['RANK'] = "0"
+    os.environ['LOCAL_RANK'] = "0"
+    os.environ['WORLD_SIZE'] = "1"
+    os.environ['MASTER_ADDR'] = "127.0.0.1"
+    os.environ['MASTER_PORT'] = "16666"
+
+    torchrun()
+
+
+if __name__ == "__main__":
+    python_spawn()
+    # python()
+    # torchrun()
 

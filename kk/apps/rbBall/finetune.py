@@ -30,7 +30,7 @@ def ddp_setup_torchrun(rank: int, world_size: int = 2):
     torch.cuda.set_device(rank)
 
 def train():
-    config = kkm.KKM_Config()
+    config = kkm.KkmConfig()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     train = models.RBDataset(config, "../../datasets/rbBall/rbBall_train.npy")
     val = models.RBDataset(config, "../../datasets/rbBall/rbBall_val.npy")

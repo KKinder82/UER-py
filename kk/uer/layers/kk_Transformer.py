@@ -3,18 +3,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import kk.uer.kk_module as kkm
-import kk.uer.layers.kk_SelfAttation as kksa
+import kk.uer.layers.kk_Selfattation as kksa
 import kk.uer.layers.kk_Linear as kkl
 import math
 
 
-class Kk_TransformerEncode(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, in_feather: int,
+class KkTransformerEncode(kkm.KkModule):
+    def __init__(self, config: kkm.KkmConfig, in_feather: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
-        super(Kk_TransformerEncode, self).__init__(config)
-        self.MSA = kksa.Kk_MultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
+        super(KkTransformerEncode, self).__init__(config)
+        self.MSA = kksa.KkMultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
         self.MSANorm = nn.LayerNorm(in_feather)
-        self.FFN = kkl.Kk_FFNLayer(config, in_feather, in_feather)
+        self.FFN = kkl.KkFfnLayer(config, in_feather, in_feather)
         self.FFNNorm = nn.LayerNorm(in_feather)
         pass
 
@@ -31,15 +31,15 @@ class Kk_TransformerEncode(kkm.Kk_Module):
         return o, o1, o2
 
 
-class Kk_TransformerDecode(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, in_feather: int,
+class KkTransformerDecode(kkm.KkModule):
+    def __init__(self, config: kkm.KkmConfig, in_feather: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
-        super(Kk_TransformerDecode, self).__init__(config)
-        self.MSA = kksa.Kk_MultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
+        super(KkTransformerDecode, self).__init__(config)
+        self.MSA = kksa.KkMultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
         self.MSANorm = nn.LayerNorm(in_feather)
-        self.MSA2 = kksa.Kk_MultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
+        self.MSA2 = kksa.KkMultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
         self.MSA2Norm = nn.LayerNorm(in_feather)
-        self.FFN = kkl.Kk_FFNLayer(config, in_feather, in_feather)
+        self.FFN = kkl.KkFfnLayer(config, in_feather, in_feather)
         self.FFNNorm = nn.LayerNorm(in_feather)
         pass
 
@@ -59,15 +59,15 @@ class Kk_TransformerDecode(kkm.Kk_Module):
         return o, o1, o2, o3
 
 
-class Kk_Transformer(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, in_feather: int, out_feather: int,
+class KkTransformer(kkm.KkModule):
+    def __init__(self, config: kkm.KkmConfig, in_feather: int, out_feather: int,
                  head_feathers: int = 128, head_size: int = 8, loops: int = 6):
-        super(Kk_Transformer, self).__init__(config)
-        self.encoder = Kk_TransformerEncode(config, in_feather,
-                                            head_feathers=head_feathers, head_size=head_size, loops=loops)
-        self.decoder = Kk_TransformerDecode(config, in_feather,
-                                            head_feathers=head_feathers, head_size=head_size, loops=loops)
-        self.FFN = kkl.Kk_FFNLayer(config, in_feather, out_feather)
+        super(KkTransformer, self).__init__(config)
+        self.encoder = KkTransformerEncode(config, in_feather,
+                                           head_feathers=head_feathers, head_size=head_size, loops=loops)
+        self.decoder = KkTransformerDecode(config, in_feather,
+                                           head_feathers=head_feathers, head_size=head_size, loops=loops)
+        self.FFN = kkl.KkFfnLayer(config, in_feather, out_feather)
 
     def forward(self, in_context, in_x, in_last=None, out_format: int = 0, activationFn: str = "softmax"):
         if in_last is None:
@@ -90,7 +90,7 @@ class Kk_Transformer(kkm.Kk_Module):
 if __name__ == "__main__":
     context = torch.arange(88, dtype=torch.float32).view(1, 1, 88)
     x = torch.arange(88, dtype=torch.float32).view(1, 1, 88)
-    net = Kk_Transformer(None, 88, 49, 128, 6)
+    net = KkTransformer(None, 88, 49, 128, 6)
     o = net(context, x, activationFn="sigmoid")
     print(o)
 

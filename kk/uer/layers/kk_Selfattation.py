@@ -7,9 +7,9 @@ import kk.uer.layers.kk_Linear as kkl
 import math
 
 
-class Kk_SelfAttationItem(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, qk_feathers: int, out_feathers: int, v_feathers: int = 0, inner_feathers: int = 256) -> np.array:
-        super(Kk_SelfAttationItem, self).__init__(config)
+class KkSelfAttationItem(kkm.KkModule):
+    def __init__(self, config: kkm.KkmConfig, qk_feathers: int, out_feathers: int, v_feathers: int = 0, inner_feathers: int = 256) -> np.array:
+        super(KkSelfAttationItem, self).__init__(config)
         if v_feathers == 0:
             v_feathers = qk_feathers
         self.inner_feathers = inner_feathers
@@ -33,13 +33,14 @@ class Kk_SelfAttationItem(kkm.Kk_Module):
         o = self.Dropout1(o)
         return o
 
-class Kk_SelfAttation(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, qk_feathers: int, out_feathers: int, v_feathers: int = 0,
+
+class KkSelfattation(kkm.KkModule):
+    def __init__(self, config: kkm.KkmConfig, qk_feathers: int, out_feathers: int, v_feathers: int = 0,
                  inner_feathers: int = 256, loops: int = 6) -> np.array:
-        super(Kk_SelfAttation, self).__init__(config)
-        self.SA1 = Kk_SelfAttationItem(config, qk_feathers, inner_feathers, v_feathers, inner_feathers)
-        self.SAs = [Kk_SelfAttationItem(config, inner_feathers, inner_feathers, inner_feathers, inner_feathers) for _ in range(loops)]
-        self.SAl = Kk_SelfAttationItem(config, inner_feathers, out_feathers, inner_feathers, inner_feathers)
+        super(KkSelfattation, self).__init__(config)
+        self.SA1 = KkSelfAttationItem(config, qk_feathers, inner_feathers, v_feathers, inner_feathers)
+        self.SAs = [KkSelfAttationItem(config, inner_feathers, inner_feathers, inner_feathers, inner_feathers) for _ in range(loops)]
+        self.SAl = KkSelfAttationItem(config, inner_feathers, out_feathers, inner_feathers, inner_feathers)
 
     def forward(self, q, k, v):
         o = self.SA1(q, k, v)
@@ -49,10 +50,10 @@ class Kk_SelfAttation(kkm.Kk_Module):
         return o
 
 
-class Kk_MultiSelfAttationItem(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, qk_feathers: int, v_feathers: int = 0,
+class KkMultiselfattationItem(kkm.KkModule):
+    def __init__(self, config: kkm.KkmConfig, qk_feathers: int, v_feathers: int = 0,
                  head_feathers: int = 512, head_count: int = 8, out_feathers: int = 0) -> np.array:
-        super(Kk_MultiSelfAttationItem, self).__init__(config)
+        super(KkMultiselfattationItem, self).__init__(config)
         self.head_count = head_count
         self.head_feathers = head_feathers
         if v_feathers == 0:
@@ -90,18 +91,18 @@ class Kk_MultiSelfAttationItem(kkm.Kk_Module):
         return o
 
 
-class Kk_MultiSelfAttation(kkm.Kk_Module):
-    def __init__(self, config: kkm.KKM_Config, qk_feathers: int, v_feathers: int,
-                 head_feathers: int = 512, head_count: int = 8, loops: int = 6, out_feathers: int = 0,) -> np.array:
-        super(Kk_MultiSelfAttation, self).__init__(config)
+class KkMultiSelfAttation(kkm.KkModule):
+    def __init__(self, config: kkm.KkmConfig, qk_feathers: int, v_feathers: int,
+                 head_feathers: int = 512, head_count: int = 8, loops: int = 6, out_feathers: int = 0, ) -> np.array:
+        super(KkMultiSelfAttation, self).__init__(config)
         self.out_feathers = out_feathers
         self.inner_feathers = head_feathers * head_count
-        self.SA1 = Kk_MultiSelfAttationItem(config, qk_feathers, v_feathers, head_feathers, head_count)
-        self.SAs = nn.ModuleList([Kk_MultiSelfAttationItem(config, self.inner_feathers, self.inner_feathers,
-                                                           head_feathers, head_count)
-                    for _ in range(loops)])
-        self.SAl = Kk_MultiSelfAttationItem(config, self.inner_feathers, self.inner_feathers,
-                                            head_feathers, head_count, out_feathers)
+        self.SA1 = KkMultiselfattationItem(config, qk_feathers, v_feathers, head_feathers, head_count)
+        self.SAs = nn.ModuleList([KkMultiselfattationItem(config, self.inner_feathers, self.inner_feathers,
+                                                          head_feathers, head_count)
+                                  for _ in range(loops)])
+        self.SAl = KkMultiselfattationItem(config, self.inner_feathers, self.inner_feathers,
+                                           head_feathers, head_count, out_feathers)
 
     def forward(self, q, k=None, v=None):
         if k is None:
@@ -123,7 +124,7 @@ if __name__ == "__main__":
     # print(x.shape)
     # exit()
     # x = kkl.Kk_FeatherLayer(None, 88, 128)(x)
-    SA = Kk_MultiSelfAttation(None, 88, 88, out_feathers=10)
+    SA = KkMultiSelfAttation(None, 88, 88, out_feathers=10)
     x = SA(x, x, x)
     print("**A**")
     print(x)
