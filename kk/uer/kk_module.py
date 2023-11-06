@@ -237,6 +237,8 @@ class ModuleTest(Kk_Module):
 
 
 def add(x, y):
+    system = "cuda" if torch.cuda.is_available() else "cpu"
+    print(system)
     return x + y
 
 
