@@ -237,9 +237,10 @@ class ModuleTest(Kk_Module):
 
 
 if __name__ == "__main__":
-    datas = torch.randn(1000, 89)
+    datas = torch.zeros(1000, 89)
     datas.to(0)
     for i in datas:
+        datas = i + 1
         print(i)
     exit()
 
