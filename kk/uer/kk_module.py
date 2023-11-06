@@ -206,7 +206,7 @@ class Kk_train(object):
         for iepoch in tqdm.tqdm(range(self.config.epoch), desc="Epoch"):
             self._epoch(iepoch)
             # 进行验证
-            self._val()
+            # self._val()
 
         if self.config.gpu_count > 1:
             # 分布式处理
