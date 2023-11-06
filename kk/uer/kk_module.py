@@ -107,6 +107,8 @@ class Kk_train(object):
         if "cuda" == self.config.device:
             x = x.to(self.config.device)
         o = self.model(x)
+        print(o.shape)
+        print(y.shape)
         loss = self.lossFn(o, y)
         # loss.backward()
         return loss.item()
