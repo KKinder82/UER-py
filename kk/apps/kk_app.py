@@ -351,48 +351,69 @@ class KkTrain(KkApp):
         loss.backward()
         return loss_value
 
+    def _save(self, ibatch, loss, focus: bool = False):
+        if self.config.rank != 0:
+            return
+        if focus:
+            if self.config.checkpoint_mode is None:
+                pass
+            elif self.config.checkpoint_mode == "model":
+                _save = (self.config.checkpoint_mode, loss, self.model)
+                torch.save(_save, self.config.checkpoint_last)
+                if self.last_loss is None or self.last_loss > loss:
+                    self.last_loss = loss
+                    torch.save(_save, self.config.checkpoint_best)
+            elif self.config.checkpoint_mode == "dict":
+                _save = (self.config.checkpoint_mode, loss, self.model.state_dict())
+                torch.save(_save, self.config.checkpoint_last)
+                if self.last_loss is None or self.last_loss > loss:
+                    self.last_loss = loss
+                    torch.save(_save, self.config.checkpoint_best)
+            else:
+                print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
+        else:
+            if self.config.checkpoint_mode is None:
+                pass
+            elif self.config.checkpoint_mode == "model":
+                if ibatch % self.config.save_checkpoint_steps == 0:
+                    _save = (self.config.checkpoint_mode, loss, self.model)
+                    torch.save(_save, self.config.checkpoint_last)
+                if self.last_loss is None or self.last_loss > loss:
+                    self.last_loss = loss
+                    _save = (self.config.checkpoint_mode, loss, self.model)
+                    torch.save(_save, self.config.checkpoint_best)
+            elif self.config.checkpoint_mode == "dict":
+                if ibatch % self.config.save_checkpoint_steps == 0:
+                    _save = (self.config.checkpoint_mode, loss, self.model.state_dict())
+                    torch.save(_save, self.config.checkpoint_last)
+
+                if self.last_loss is None or self.last_loss > loss:
+                    self.last_loss = loss
+                    _save = (self.config.checkpoint_mode, loss, self.model.state_dict())
+                    torch.save(_save, self.config.checkpoint_best)
+            else:
+                print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
+        _save = None
+
     def _epoch(self, iepoch: int):
         self.optim.zero_grad()
         need_optim = False
         for ibatch, idata in enumerate(self.dataLoader):
-            print("  >> Epoch {}/{}, batch {}/{}, rank:{}".format(iepoch, self.config.epoch,
-                                                         ibatch, len(self.dataLoader), self.config.rank))
             loss = self._batch(iepoch, ibatch, idata)
+            print("  >> Epoch {}/{}, batch {}/{}, rank:{}, loss:{}".format(iepoch, self.config.epoch,
+                                                         ibatch, len(self.dataLoader), self.config.rank, loss))
             need_optim = True
-            # if ibatch % self.config.report_steps == 0:
-            #     log.info("  >> Epoch {}/{}, batch {}/{}, loss:{}".format(iepoch, self.config.epoch,
-            #                                                              ibatch, len(self.dataLoader),
-            #                                                              loss))
-            if self.config.rank == 0:
-                if ibatch % self.config.accumulation_steps == 0:
-                    self.optim.step()
-                    self.optim.zero_grad()
-                    need_optim = False
-                if self.config.checkpoint_mode is not None:
-                    if self.config.checkpoint_mode == "model":
-                        if ibatch % self.config.save_checkpoint_steps == 0:
-                            _save = (self.config.checkpoint_mode, loss, self.model)
-                            torch.save(_save, self.config.checkpoint_last)
-                        if self.last_loss is None or self.last_loss > loss:
-                            self.last_loss = loss
-                            _save = (self.config.checkpoint_mode, loss, self.model)
-                            torch.save(_save, self.config.checkpoint_best)
-                    elif self.config.checkpoint_mode == "dict":
-                        if ibatch % self.config.save_checkpoint_steps == 0:
-                            _save = (self.config.checkpoint_mode, loss, self.model.state_dict())
-                            torch.save(_save, self.config.checkpoint_last)
+            if ibatch % self.config.accumulation_steps == 0:
+                self.optim.step()
+                self.optim.zero_grad()
+                need_optim = False
+                self._save(ibatch, loss, focus=False)
 
-                        if self.last_loss is None or self.last_loss > loss:
-                            self.last_loss = loss
-                            _save = (self.config.checkpoint_mode, loss, self.model.state_dict())
-                            torch.save(_save, self.config.checkpoint_best)
-                    else:
-                        print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
-                    _save = None
-        if self.config.rank == 0 and need_optim:
+        if need_optim:
             self.optim.step()
             self.optim.zero_grad()
             need_optim = False
+            self._save(ibatch, loss, focus=False)
 
     def __call__(self, *args, **kwargs):
         self.train()
