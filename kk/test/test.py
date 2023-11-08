@@ -12,6 +12,7 @@ import sentencepiece as spm
 import random
 import numpy as np
 import kk.kk_utils as kku
+import os
 
 
 # from finetune.run_c3 import MultipleChoice
@@ -34,9 +35,22 @@ def kk_gen():
 
 
 
-
-
 def main():
+    file_name = "example.txt"
+    absolute_path = os.path.abspath(file_name)
+    print("文件的绝对路径是：", absolute_path)
+    print(os.path.isabs(file_name))
+    print(os.path.isabs(absolute_path))
+    directory_path = os.path.dirname(absolute_path)
+    print(directory_path)
+    base_name = os.path.basename(absolute_path)
+    print(base_name)
+    ext = os.path.splitext(absolute_path)
+    print(ext)
+    drive = os.path.splitdrive(absolute_path)
+    print(drive)
+    exit(0)
+
     o = torch.tensor([[5, 2, 1, 4, 1], [3, 9, 2, 1, 5]])
     y = torch.tensor([[0, 1, 1, 0, 1], [0, 1, 1, 0, 1]])
     blocks = [3]

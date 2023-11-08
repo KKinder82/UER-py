@@ -11,7 +11,7 @@ import kk.uer.layers.kk_Transformer as kkt
 class RBModel(kka.KkModule):
     def __init__(self, config: kka.KkmConfig, context=None):
         super(RBModel, self).__init__(config)
-        self.backbone = kkt.KkTransformer(config=config, in_feather=88, loops=2)
+        self.backbone = kkt.KkTransformer(config=config, in_feather=88, loops=0)
         self.classifier = kkl.KkClassifierLayer(config, 88, 49, classifierMode=7)
         if context is None:
             context = torch.zeros((1, 88), dtype=torch.float32)

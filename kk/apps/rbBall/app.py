@@ -10,8 +10,9 @@ import models as models
 import kk.apps.kk_app as kka
 
 if __name__ == "__main__":
-    config = kka.KkmConfig()
-    config.batch_ceil = True
+    _path = os.path.dirname(os.path.abspath(__file__))
+    config = kka.KkmConfig(_path)
+
     # config.batch_size =
     model = models.RBModel(config)
     dataset = kka.KkDataset(config, path_np="data/rbBall_train.npy", x_len=88)

@@ -1,5 +1,7 @@
 import os
 import pathlib as path
+import sys
+
 import torch
 import torch.multiprocessing as mp
 import torch.nn as nn
@@ -31,7 +33,7 @@ def env_value(name: str, default: str = ""):
 
 
 class KkmConfig(object):
-    def __init__(self, *args, **kwargs): # args:可变数量参数； kwargs：关键字参数（可变数量）
+    def __init__(self, app_path: str, *args, **kwargs): # args:可变数量参数； kwargs：关键字参数（可变数量）
         # 日志配置
         # %(name)s        logger 名称, 即调用logging.getLogger函数传入的参数
         # %(levelno)s     数字形式的日志记录级别
@@ -52,6 +54,9 @@ class KkmConfig(object):
         log.basicConfig(level=log.INFO, format="%(created)f %(asctime)s %(levelname)s %(message)s \r\n", datefmt="%Y-%m-%d %H:%M:%S")
         # 应用配置
         self.app_name = "DLApp"
+        if not os.path.exists(app_path):
+            raise FileNotFoundError(" 应用路径不存在。")
+        self.app_path = app_path
         # 分布式训练
         self.rank = env_int('RANK', 0)                   # int(os.environ['RANK'])
         self.local_rank = env_int('LOCAL_RANK', 0)       # int(os.environ['LOCAL_RANK'])
@@ -70,9 +75,6 @@ class KkmConfig(object):
         self.num_workers = self.world_size
         self.pin_memory = True
         self.batch_ceil = False      # 当数据不能整除时，是否补齐
-        # 模型加载
-        self.ptload_mode = "model"   # 文件类型 None: 不加载, dict: 参数文件, model : 模型与参数
-        self.pt = "model_best.pth"
         # 训练
         self.epoch = 100
         self.accumulation_steps = 5
@@ -81,6 +83,17 @@ class KkmConfig(object):
         self.checkpoint_mode = "model"           # None: 不保存, dict: 参数文件, model : 模型与参数
         self.checkpoint_last = "model_last.pth"
         self.checkpoint_best = "model_best.pth"
+        # 模型加载
+        self.pt_load = True                     # 是否加载： True: 加载， False: 不加载
+        self.pt = "model_best.pth"
+
+        # 初始化目录
+        if self.pt and not os.path.isabs(self.pt):
+            self.pt = os.path.join(self.app_path, self.pt)
+        if self.checkpoint_last and not os.path.isabs(self.checkpoint_last):
+            self.checkpoint_last = os.path.join(self.app_path, self.checkpoint_last)
+        if self.checkpoint_best and not os.path.isabs(self.checkpoint_best):
+            self.checkpoint_best = os.path.join(self.app_path, self.checkpoint_best)
 
 
 class KkModule(nn.Module):
@@ -140,29 +153,32 @@ class KkWrongLoss(KkLoss):
         return loss, 0, wrong_perc
 
 
-
 class KkApp(object):
     def __init__(self, config: KkmConfig, model):
         super(KkApp, self).__init__()
         self.config = config
         self.model_src = model
-        if self.config.ptload_mode is not None:
-            self.model = self.model_src
-        elif self.config.ptload_mode == "dict":
+        self.last_loss = None
+        if self.config.pt_load:
             if os.path.exists(self.config.pt):
-                print("  >> 正在加载模型参数文件：{} ... ".format(self.config.pt))
-                self.model_src.load_state_dict(torch.load(self.config.pt))
-                self.model = self.model_src
+                print("  >> 加载模型参数文件：{} ... ".format(self.config.pt));
+                _save = torch.load(self.config.pt)
+                if isinstance(_save, tuple):
+                    if _save[0] == "model":
+                        self.model = _save[2]
+                        self.last_loss = _save[1]
+                    elif _save[0] == "dict":
+                        self.model = self.model_src
+                        self.model.load_state_dict(_save[2])
+                        self.last_loss = _save[1]
+                    else:
+                        raise Exception("  >> KkmConfig中，pt 参数文件错误。")
+                else:
+                    self.model = _save
             else:
-                raise FileNotFoundError(" KkmConfig配置文件中配置的模型文件不存在。")
-        elif self.config.ptload_mode == "model":
-            if os.path.exists(self.config.pt):
-                print("  >> 正在加载模型：{} ... ".format(self.config.pt))
-                self.model = torch.load(self.config.pt)
-            else:
-                raise FileNotFoundError(" KkmConfig配置文件中配置的模型文件不存在。")
+                raise FileNotFoundError("  >>KkmConfig中，pt模型参数文件不存在。")
         else:
-            raise Exception(" KkmConfig 配置文件中的 ptload_mode 配置错误。")
+            self.model = self.model_src
 
     def device_init(self):
         if self.config.device == "cuda":
@@ -215,7 +231,6 @@ class KkInference(KkApp):
                 out.append(o)
             print(out)
         self.device_uninit()
-
 
 class KkSampler(data.Sampler):
     def __init__(self, config: KkmConfig, data_source):
@@ -276,7 +291,6 @@ class KkTrain(KkApp):
                  lossFn, optim=None):
         super(KkTrain, self).__init__(config, model)
         self.loss_value = 0.0
-        self.last_loss = None
         self.config = config
         self.gpu_count = config.gpu_count
         self.dataset = dataset
@@ -341,34 +355,41 @@ class KkTrain(KkApp):
         self.optim.zero_grad()
         need_optim = False
         for ibatch, idata in enumerate(self.dataLoader):
+            print("  >> Epoch {}/{}, batch {}/{}, rank:{}".format(iepoch, self.config.epoch,
+                                                         ibatch, len(self.dataLoader), self.config.rank))
             loss = self._batch(iepoch, ibatch, idata)
             need_optim = True
             # if ibatch % self.config.report_steps == 0:
             #     log.info("  >> Epoch {}/{}, batch {}/{}, loss:{}".format(iepoch, self.config.epoch,
             #                                                              ibatch, len(self.dataLoader),
             #                                                              loss))
-            if ibatch % self.config.accumulation_steps == 0:
-                self.optim.step()
-                self.optim.zero_grad()
-                need_optim = False
-            if self.config.checkpoint_mode is not None:
-                if self.config.checkpoint_mode == "model":
-                    if ibatch % self.config.save_checkpoint_steps == 0:
-                        torch.save(self.model, self.config.checkpoint_last)
+            if self.config.rank == 0:
+                if ibatch % self.config.accumulation_steps == 0:
+                    self.optim.step()
+                    self.optim.zero_grad()
+                    need_optim = False
+                if self.config.checkpoint_mode is not None:
+                    if self.config.checkpoint_mode == "model":
+                        if ibatch % self.config.save_checkpoint_steps == 0:
+                            _save = (self.config.checkpoint_mode, loss, self.model)
+                            torch.save(_save, self.config.checkpoint_last)
+                        if self.last_loss is None or self.last_loss > loss:
+                            self.last_loss = loss
+                            _save = (self.config.checkpoint_mode, loss, self.model)
+                            torch.save(_save, self.config.checkpoint_best)
+                    elif self.config.checkpoint_mode == "dict":
+                        if ibatch % self.config.save_checkpoint_steps == 0:
+                            _save = (self.config.checkpoint_mode, loss, self.model.state_dict())
+                            torch.save(_save, self.config.checkpoint_last)
 
-                    if self.last_loss is None or self.last_loss > loss:
-                        self.last_loss = loss
-                        torch.save(self.model, self.config.checkpoint_best)
-                elif self.config.checkpoint_mode == "dict":
-                    if ibatch % self.config.save_checkpoint_steps == 0:
-                        torch.save(self.model.state_dict(), self.config.checkpoint_last)
-
-                    if self.last_loss is None or self.last_loss > loss:
-                        self.last_loss = loss
-                        torch.save(self.model.state_dict(), self.config.checkpoint_best)
-                else:
-                    print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
-        if need_optim:
+                        if self.last_loss is None or self.last_loss > loss:
+                            self.last_loss = loss
+                            _save = (self.config.checkpoint_mode, loss, self.model.state_dict())
+                            torch.save(_save, self.config.checkpoint_best)
+                    else:
+                        print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
+                    _save = None
+        if self.config.rank == 0 and need_optim:
             self.optim.step()
             self.optim.zero_grad()
             need_optim = False
@@ -422,12 +443,22 @@ class KkTrain(KkApp):
                                                   sampler=self.sampler_val, num_workers=self.config.num_workers,
                                                   pin_memory=self.config.pin_memory)
 
+        # 开始显示
+        if self.config.rank == 0:
+            print("  >> 开始训练，epoch:{}, batch_size:{}, world_size:{}, gpu_count:{}, loss:{}"
+                  .format(self.config.epoch, self.config.batch_size,
+                          self.config.world_size, self.config.gpu_count, self.last_loss))
+
         for iepoch in tqdm.tqdm(range(self.config.epoch), desc=f" Epoch"):
             self.model.train()
+            if isinstance(self.sampler, dist_data.DistributedSampler):
+                self.sampler.set_epoch(iepoch)
             self._epoch(iepoch)
 
             # 进行验证
             self.model.eval()
+            if isinstance(self.sampler_val, dist_data.DistributedSampler):
+                self.sampler_val.set_epoch(iepoch)
             self._val(iepoch)
 
         self.device_uninit()
@@ -436,24 +467,21 @@ class KkTrain(KkApp):
 class ModuleTest(KkModule):
     def __init__(self, config: KkmConfig):
         super(ModuleTest, self).__init__(config)
-        self.net = nn.Sequential(
-            nn.Linear(88, 880),
-            nn.BatchNorm1d(880),
-            nn.Linear(880, 88),
-            nn.BatchNorm1d(88),
+        self.backbone = nn.Sequential(
             nn.Linear(88, 880),
             nn.BatchNorm1d(880),
             nn.Linear(880, 88),
             nn.Linear(88, 1))
 
     def forward(self, x):
-        o = self.net(x)
+        o = self.backbone(x)
         return o
 
 
 def torchrun():
     # 运行指令 torchrun --nperc-per-node 1 .\kk_app.py
-    config = KkmConfig()
+    _path = os.path.dirname(os.path.abspath(__file__))
+    config = KkmConfig(_path)
     datas = torch.randn(1000, 89)
     # print(datas[:, 0:88].sum(dim=1) / 3.1415926)
     datas[:, 88] = datas[:, 0:88].sum(dim=1) / 3.1415926
