@@ -50,6 +50,8 @@ class KkmConfig(object):
         # %(message)s     记录的消息, 如logging.getLogger().debug(msg)指定的msg
 
         log.basicConfig(level=log.INFO, format="%(created)f %(asctime)s %(levelname)s %(message)s \r\n", datefmt="%Y-%m-%d %H:%M:%S")
+        # 应用配置
+        self.app_name = "DLApp"
         # 分布式训练
         self.rank = env_int('RANK', 0)                   # int(os.environ['RANK'])
         self.local_rank = env_int('LOCAL_RANK', 0)       # int(os.environ['LOCAL_RANK'])
