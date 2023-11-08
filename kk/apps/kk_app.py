@@ -150,12 +150,14 @@ class KkApp(object):
             self.model = self.model_src
         elif self.config.ptload_mode == "dict":
             if os.path.exists(self.config.pt):
+                print("  >> 正在加载模型参数文件：{} ... ".format(self.config.pt))
                 self.model_src.load_state_dict(torch.load(self.config.pt))
                 self.model = self.model_src
             else:
                 raise FileNotFoundError(" KkmConfig配置文件中配置的模型文件不存在。")
         elif self.config.ptload_mode == "model":
             if os.path.exists(self.config.pt):
+                print("  >> 正在加载模型：{} ... ".format(self.config.pt))
                 self.model = torch.load(self.config.pt)
             else:
                 raise FileNotFoundError(" KkmConfig配置文件中配置的模型文件不存在。")
