@@ -12,6 +12,7 @@ import kk.apps.kk_app as kka
 if __name__ == "__main__":
     _path = os.path.dirname(os.path.abspath(__file__))
     config = kka.KkmConfig(_path)
+    config.pt_load = False
 
     # config.batch_size =
     model = models.RBModel(config)
