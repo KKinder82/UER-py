@@ -3,26 +3,32 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import kk.apps.kk_app as kka
+import kk.uer.kk_base as kkb
+import kk.uer.kk_config as kkc
 import kk.uer.layers.kk_Selfattation as kksa
 import kk.uer.layers.kk_Linear as kkl
 import math
 
 
-class KkNormalization(kka.KkModule):
-    def __init__(self, config: kka.KkmConfig, eps: float = 1e-5):
+class KkNormalization(kkb.KkModule):
+    def __init__(self, config: kkc.KkmConfig, *, mean: float = 0, std: float = 1, eps: float = 1e-5):
         super(KkNormalization, self).__init__(config)
         self.eps = eps
+        self.mean = mean
+        self.std = std
 
     def forward(self, x):
         # x = x.type(torch.float64)
         _mean = x.mean(dim=-1, keepdim=True)
         _var = torch.var(x, dim=-1, keepdim=True, unbiased=False)
-        return (x - _mean) / (_var + self.eps).sqrt()
+        o = (x - _mean) / (_var + self.eps).sqrt()  # 标准
+        o = o * self.std + self.mean                # 自定义
+        return o
 
 
 class KkBatchNormal(KkNormalization):
-    def __init__(self, config: kka.KkmConfig, eps: float = 1e-5):
-        super(KkBatchNormal, self).__init__(config, eps)
+    def __init__(self, config: kkc.KkmConfig, *, eps: float = 1e-5):
+        super(KkBatchNormal, self).__init__(config, eps=eps)
 
     # 批次, 通道, 数据
     def forward(self, x):
@@ -34,8 +40,8 @@ class KkBatchNormal(KkNormalization):
 
 
 class KkLayerNormal(KkNormalization):
-    def __init__(self, config: kka.KkmConfig, eps: float = 1e-5):
-        super(KkLayerNormal, self).__init__(config, eps)
+    def __init__(self, config: kkc.KkmConfig, *, eps: float = 1e-5):
+        super(KkLayerNormal, self).__init__(config, eps=eps)
 
     # 批次, 通道, 数据
     def forward(self, x):
@@ -46,8 +52,8 @@ class KkLayerNormal(KkNormalization):
 
 
 class KkInstanceNormal(KkNormalization):
-    def __init__(self, config: kka.KkmConfig, eps: float = 1e-5):
-        super(KkInstanceNormal, self).__init__(config, eps)
+    def __init__(self, config: kkc.KkmConfig, *, eps: float = 1e-5):
+        super(KkInstanceNormal, self).__init__(config, eps=eps)
 
     # 批次, 通道, 数据
     def forward(self, x):
@@ -58,8 +64,8 @@ class KkInstanceNormal(KkNormalization):
 
 
 class KkGroupNormal(KkNormalization):
-    def __init__(self, config: kka.KkmConfig, groups: int = 2, eps: float = 1e-5):
-        super(KkGroupNormal, self).__init__(config, eps)
+    def __init__(self, config: kkc.KkmConfig, groups: int = 2, *, eps: float = 1e-5):
+        super(KkGroupNormal, self).__init__(config, eps=eps)
         self.groups = groups
 
     # 批次, 通道, 数据
@@ -72,9 +78,9 @@ class KkGroupNormal(KkNormalization):
         return o.reshape(*_s)
 
 
-class KkGroupNormalEx(KkNormalization):
-    def __init__(self, config: kka.KkmConfig, groups: int, dim: int = 1, eps: float = 1e-5):
-        super(KkGroupNormalEx, self).__init__(config, eps)
+class KkGroupNormalDim(KkNormalization):
+    def __init__(self, config: kkc.KkmConfig, groups: int, dim: int = 1, *, eps: float = 1e-5):
+        super(KkGroupNormalDim, self).__init__(config, eps=eps)
         self.groups = groups
         self.dim = dim
 
@@ -84,7 +90,7 @@ class KkGroupNormalEx(KkNormalization):
         if _s[self.dim] % self.groups != 0:
             raise ValueError("分组不匹配")
         o = x.view(*_s[0:self.dim], self.groups, -1)
-        o = super(KkGroupNormalEx, self).forward(o)
+        o = super(KkGroupNormalDim, self).forward(o)
         return o.reshape(*_s)
 
 

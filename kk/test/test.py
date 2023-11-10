@@ -34,8 +34,109 @@ def kk_gen():
     print("10.收到 x={}".format(x))
 
 
-
 def main():
+    a = torch.arange(6).view(1, 2, 3) + 1
+    b = torch.sum(a, dim=-1, keepdim=True)
+    print(a)
+    print(b)
+    print(a/b)
+    exit(0)
+
+
+    for i in range(50):
+        a = torch.Tensor(2, 3).uniform_(-1, 1)
+        print(a)
+        print(a.mean())
+    exit(0)
+
+    a = torch.tensor([2])
+    print(a.log())
+    print(2 / 3)
+    exit(0)
+
+    # Tensor 索引
+    o = torch.arange(9).reshape(3, 3)
+
+    i = [1, 2]  # 选择第1，2行的所有元素
+    print(o[i])
+
+    i = [[1, 2], [0, 2]]    #选择第1行0列，2行2列的2个元素
+    print(o[i])
+
+    i = [1, 2]
+    print(o[i])
+
+    i = torch.tensor([[[1, 2]]])  # 按行选每一行的所有元素，再组成 2 * 4 * N 的 Tensor
+    print(o[i])
+
+    i = torch.tensor([[1, 1, 1, 1], [1, 0, 2, 2]])  # 按行选每一行的所有元素，再组成 2 * 4 * N 的 Tensor
+    print(o[i])
+
+    i = torch.tensor([[1, 1, 1, 1], [1, 0, 2, 2]])  # 按行选每一行的所有元素，再组成 2 * 4 * N 的 Tensor
+    print(o[i])
+
+    i = torch.tensor([1, 2, 2, 0, 0])  # 按行选每一行的所有元素，再组成Tensor
+    print(o[i])
+
+    i = torch.tensor([True, True, False])  # 按行选每一行的所有元素，再组成Tensor
+    print(o[i])
+    i = torch.tensor([[True, True, False], [True, True, False], [True, True, False]])  # 按元素选择，组成一维Tensor
+    print(o[i])
+    # i = torch.tensor([[False, True, False]])  # Error
+    # print(o[i])
+    # i = torch.tensor([[False, True, False], [False, True, True]])  # Error
+    # print(o[i])
+
+    i = [True, True, False]  # list 按行选每一行的所有元素： 选择第一行，第二行， 前面维数必须一致 （行数与原tensor相同）
+    print(o[i])
+    i = [[True, True, False]]  # list 按行选每一行的所有元素： 选择第一行，第二行， ， 前面维数必须一致 （行数与原tensor相同）
+    print(o[i])
+    i = [[False, True, False], [False, True, True]]  # list 选按行选，再按列选： 选择第2行，再选择第2、3列 （行、列数与原tensor相同）
+    print(o[i])
+
+    exit(0)
+
+
+
+    # 随机
+    for i in range(20):
+        o = random.randint(1,3)
+        print(o)
+    exit()
+
+    # 广播用法
+    x = torch.tensor([[4, 5, 6]])
+    o = x + torch.tensor([0], [0])
+    print(o)
+
+    # concat 的用法
+    x = torch.tensor([[4, 5, 6]])
+    y = torch.tensor([[3, 3, 3], [5, 5, 6]])
+    z = [x, y]
+    o = torch.cat(z, dim=1)  # shape(4 * 3)
+    print(o)
+    exit(0)
+
+    x = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    y = torch.tensor([[3, 3, 3], [5, 5, 6]])
+    z = [x, y]
+    o = torch.cat(z, dim=0)    # shape(4 * 3)
+    o = torch.cat(z, dim=-1)   # shape(2 * 6)
+    o = torch.stack(z, dim=-1)  # shape(2 * 3 * 2) #dim 是建好后 dim
+    o = torch.stack(z, dim=1)  # shape(2 * 2 * 3)
+    o = torch.stack(z, dim=0)  # shape(2 * 2 * 3)
+    o = torch.hstack(z)  # shape(2 * 6)   横向
+    o = torch.column_stack(z)  # shape(2 * 6) 横向
+    o = torch.vstack(z)        # shape(4 * 3)   纵向
+    o = torch.row_stack(z)     # shape(4 * 3)   纵向
+    print(o)
+    exit(0)
+
+    # range 的用法
+    for i in range(2, 10, 2):
+        print(i)
+    exit(0)
+
     file_name = "example.txt"
     absolute_path = os.path.abspath(file_name)
     print("文件的绝对路径是：", absolute_path)
@@ -171,7 +272,7 @@ def main():
 
     o = torch.tensor([[0.1, 0.2, 0.7], [0.3, 0.3, 0.4]], dtype=torch.float32)
     y = torch.tensor([[0, 0, 1], [1, 0, 0]], dtype=torch.float32)
-    print(" >>> BCELoss <<< ")
+    print(" >>> BCELoss <<< ")    # 二分类交差商
     loss_fn = nn.BCELoss()
     loss = loss_fn(o, y)
     print(loss)
@@ -201,15 +302,17 @@ def main():
     print(loss_user)
     print("-" * 100)
 
-    o = torch.tensor([[2, 0, 0], [0, 0, 4], [0, 1, 0]], dtype=torch.float32)
-    y = torch.tensor([0, 2, 1], dtype=torch.long)
+    o = torch.tensor([[2, 3, 3], [0, 0, 4], [0, 1, 0]], dtype=torch.float32)
+    y = torch.tensor([2, 2, 1], dtype=torch.long)
     print(" >>> NLLLoss <<< ")
     loss_fn = nn.NLLLoss()
     loss = loss_fn(o, y)
     print(loss)
-    loss_user = -(o[y]).sum(1).mean()
+    _y = [[0, 1, 2], y]
+    loss_user = -(o[_y]).mean()
     print(loss_user)
     print("-" * 100)
+    exit(0)
 
     o = torch.tensor([[0.8, 0.1, 0.1], [0.8, 0.1, 0.1]], dtype=torch.float32)
     y = torch.tensor([[0.8, 0.1, 0.1], [0.8, 0.1, 0.1]], dtype=torch.float32)

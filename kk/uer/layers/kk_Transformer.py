@@ -3,13 +3,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import kk.apps.kk_app as kka
+import kk.uer.kk_base as kkb
+import kk.uer.kk_config as kkc
 import kk.uer.layers.kk_Selfattation as kksa
 import kk.uer.layers.kk_Linear as kkl
 import math
 
 
-class KkTransformerEncode(kka.KkModule):
-    def __init__(self, config: kka.KkmConfig, in_feather: int,
+class KkTransformerEncode(kkb.KkModule):
+    def __init__(self, config: kkc.KkmConfig, in_feather: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
         super(KkTransformerEncode, self).__init__(config)
         self.MSA = kksa.KkMultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
@@ -31,8 +33,8 @@ class KkTransformerEncode(kka.KkModule):
         return o, o1, o2
 
 
-class KkTransformerDecode(kka.KkModule):
-    def __init__(self, config: kka.KkmConfig, in_feather: int,
+class KkTransformerDecode(kkb.KkModule):
+    def __init__(self, config: kkc.KkmConfig, in_feather: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
         super(KkTransformerDecode, self).__init__(config)
         self.MSA = kksa.KkMultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
@@ -59,8 +61,8 @@ class KkTransformerDecode(kka.KkModule):
         return o, o1, o2, o3
 
 
-class KkTransformer(kka.KkModule):
-    def __init__(self, config: kka.KkmConfig, in_feather: int,
+class KkTransformer(kkb.KkModule):
+    def __init__(self, config: kkc.KkmConfig, in_feather: int,
                  head_feathers: int = 128, head_size: int = 8, loops: int = 6):
         super(KkTransformer, self).__init__(config)
         self.encoder = KkTransformerEncode(config, in_feather,

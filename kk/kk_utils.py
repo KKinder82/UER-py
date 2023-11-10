@@ -1,5 +1,16 @@
 import json
 import os
+import torch
+
+def env_int(name: str, default=0):
+    if name in os.environ:
+        return int(os.environ[name])
+    return default
+
+def env_value(name: str, default: str = ""):
+    if name in os.environ:
+        return os.environ[name]
+    return default
 
 
 def load_argsconfig(file: str):
@@ -14,7 +25,6 @@ def load_argsconfig(file: str):
                 continue
             if line.startswith('#'):
                 continue
-
             items = line.split()
             args += items
     return args
@@ -33,3 +43,28 @@ def tensor_fill(tensor, index_tensor, value):
         for j in _index[i]:
             _tensor[i, j] = value
     return tensor
+
+
+def init_softmax(parameter):
+    # param = parameter # .pow(1.9)
+    summ = parameter.sum(dim=-1, keepdim=True) + 1e-7
+    parameter.data = parameter / summ
+
+
+def init_normalization(parameter):
+    std = parameter.std(dim=-1, unbiased=False, keepdim=True) + 1e-7
+    mean = parameter.mean(dim=-1, keepdim=True)
+    parameter.data = (parameter - mean) / std
+
+
+if __name__ == "__main__":
+    print(100000.0 * 2000)
+    a = torch.randint(1, 100000, (100, 200)).to(torch.float32)
+    init_softmax(a)
+    print(a.std())
+    b = a < 1e-15
+    print(a.min())
+    print(b.count_nonzero())
+    print(a)
+
+
