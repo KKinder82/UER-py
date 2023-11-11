@@ -3,7 +3,7 @@ import os
 os.environ["PYTHONPATH"] = os.path.dirname(os.path.abspath("./../../../"))
 
 import torch
-import models as models
+import kk.apps.rbBall.models as models
 import kk.apps.kk_app as kka
 import kk.uer.kk_config as kkc
 
