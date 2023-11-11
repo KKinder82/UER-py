@@ -23,7 +23,9 @@ def train():
                           loss_fn=loss_fun, optim=optim)
     trainer.train()
 
+
 def prediction():
+    _path = ""
 
 if __name__ == "__main__":
     train()
