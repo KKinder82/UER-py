@@ -9,12 +9,6 @@ import torch.utils.data.distributed as dist_data
 
 
 def train():
-    os.environ['RANK'] = "0"
-    os.environ['LOCAL_RANK'] = "0"
-    os.environ['WORLD_SIZE'] = "1"
-    os.environ['MASTER_ADDR'] = "127.0.0.1"
-    os.environ['MASTER_PORT'] = "16666"
-
     _path = os.path.dirname(os.path.abspath(__file__))
     config = kkc.KkmConfig(_path)
 
