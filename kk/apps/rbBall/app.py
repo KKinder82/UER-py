@@ -35,9 +35,9 @@ def test():
     dataset = kka.KkDataset(config, path_np="data/rbBall_train.npy", x_len=88)
 
     sampler = dist_data.DistributedSampler(dataset, rank=0,
-                                           num_replicas=2, shuffle=False)
+                                           num_replicas=1, shuffle=False)
     dataLoader = data.DataLoader(dataset, batch_size=config.batch_size,
-                                 shuffle=False, sampler=sampler, num_workers=config.num_workers,
+                                 shuffle=False, sampler=sampler, num_workers=2,
                                  pin_memory=config.pin_memory)
 
     for i, (x, y) in enumerate(dataLoader):
