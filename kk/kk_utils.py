@@ -45,6 +45,10 @@ def tensor_fill(tensor, index_tensor, value):
     return tensor
 
 
+def new_percent_weight(*size: int):
+    return torch.randint(1, 100000, size).to(torch.float32)
+
+
 def init_softmax(parameter):
     # param = parameter # .pow(1.9)
     summ = parameter.sum(dim=-1, keepdim=True) + 1e-7

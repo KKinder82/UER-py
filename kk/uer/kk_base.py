@@ -1,28 +1,34 @@
-import os
-import pathlib as path
-import sys
-
 import torch
-import torch.multiprocessing as mp
 import torch.nn as nn
-import torch.utils.data as data
-import torch.nn.functional as F
-
-import torch.distributed as dist
-import torch.utils.data.distributed as dist_data
-import torch.nn.parallel.distributed as dist_nn
-from torch.nn.parallel import DistributedDataParallel as DDP
-
-import numpy as np
 import math
-import logging as log
-import tqdm
-import kk.kk_utils as kku
 import random
-import time
-import kk.uer.layers.kk_Normalization as kkn
 import kk.uer.kk_config as kkc
 
+
+def get_randn_parameter(*shape, mean=0.0, std: (str, float) = 0.01):
+    if isinstance(std, str):
+        if std == "kk":
+            weight = torch.randint(1, 100000, shape).to(torch.float32)
+            weight = weight.pow(1.9) / weight.sum()
+            return weight
+        elif std == "relu":
+            std = math.sqrt(2.0 / shape[-1])
+        elif std == "tanh":
+            std = 5.0 / 3.0 * math.sqrt(3.0 / shape[-1])
+        elif std == "sigmoid":
+            std = math.sqrt(1.0 / shape[-1])
+        elif std == "normal":
+            std = 0.01
+        else:
+            std = random.randint(1, 10) / 100
+    else:
+        if std <= 0:
+            std = random.randint(1, 10) / 100
+    return torch.randn(shape) * std + mean
+
+
+def get_constant_parameter(*shape, value: int = 1):
+    return torch.full_like(shape, value, dtype=torch.float32, requires_grad=True)
 
 
 class KkModule(nn.Module):
@@ -30,23 +36,12 @@ class KkModule(nn.Module):
         super(KkModule, self).__init__()
         self.config = config
 
-    def reset_epoch(self, **args):
+    def epoch_reset(self, **args):
         # iepoch = args["iepoch"]
         pass
 
-    def get_normalization(self, normalization: str, groups: int = 2):
-        if normalization == "batch":
-            return kkn.KkBatchNormal(self.config)
-        elif normalization == "layer":
-            return kkn.KkLayerNormal(self.config)
-        elif normalization == "instance":
-            return kkn.KkInstanceNormal(self.config)
-        elif normalization == "group":
-            return kkn.KkGroupNormal(self.config, groups)
-        else:
-            return None
-
     def _init_weights(self, model, mean=0.0, std: (str, float)=0.01):
+        cfg = self.config
         if isinstance(std, str):
             if std == "relu":
                 std = math.sqrt(2.0 / model.weight.size(-1))
@@ -99,12 +94,10 @@ class KkModule(nn.Module):
 
     def before_forward(self, **args):
         # x = args["x"]
-        # y = args["y"]
-        pass
-
-    def after_loss(self, **args):
-        # x = args["x"]
+        # o = args["o"]
         # y = args["y"]
         # loss = args["y"]
+        # print("  >> --------------------- after_loss --------------------")
+        # print(args["o"])
+        # print(args["y"])
         pass
-

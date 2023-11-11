@@ -34,14 +34,46 @@ def kk_gen():
     print("10.收到 x={}".format(x))
 
 
+
+
+
 def main():
+    def aaa(*aaa):
+        print(type(aaa))
+
+    aaa(1, 2, 3)
+    exit(0)
+
+    print(100 + 5 if 4<3 else 3)
+    exit(0)
+
+
+    a = torch.arange(6).view(1, 2, 3) + 1
+    b = torch.split(a[0], (2, 1), dim=2)
+    print(b)
+    exit()
+
+    a = torch.arange(6).view(1, 2, 3) + 1
+    def oper_call(obj):
+        id_obj_storage = id(obj.untyped_storage())
+        id_obj = id(obj)
+        obj = obj / 2
+
+        print(id_obj)
+        print(id(obj))
+
+        print(id_obj_storage)
+        print(id(obj.untyped_storage()))
+    oper_call(a)
+    print(a)
+    exit(0)
+
     a = torch.arange(6).view(1, 2, 3) + 1
     b = torch.sum(a, dim=-1, keepdim=True)
     print(a)
     print(b)
     print(a/b)
     exit(0)
-
 
     for i in range(50):
         a = torch.Tensor(2, 3).uniform_(-1, 1)

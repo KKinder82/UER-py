@@ -21,7 +21,7 @@ class KkSelfAttationItem(kkb.KkModule):
         self.KNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
         self.VNet = kkl.KkLinear(config, v_feathers, out_feathers)
         self.Softmax = nn.Softmax(-1)
-        self.Norm = super(KkSelfAttationItem, self).get_normalization(normalization)
+        self.Norm = kkn.get_normalization(self.config, normalization)
 
     def forward(self, q, k, v, postion_encoding: bool = False):
         if postion_encoding:
@@ -70,7 +70,7 @@ class KkMultiSelfAttationItem(kkb.KkModule):
         self.VNets = nn.ModuleList([kkl.KkLinear(config, kv_feathers, head_feathers) for _ in range(head_count)])
         self.Softmax = nn.Softmax(-1)
         self.Linear = kkl.KkLinear(config, head_feathers * head_count, out_feathers)
-        self.Norm = super(KkMultiSelfAttationItem, self).get_normalization(normalization)
+        self.Norm = kkn.get_normalization(config, normalization)
 
     def forward(self, q, k, v):
         outs = []

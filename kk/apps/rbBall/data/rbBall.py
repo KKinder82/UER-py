@@ -42,13 +42,13 @@ def main():
 
 def split_data():
     fdata = np.load("./rbBall.npy")
-    np.save("./rbBall_train.npy", fdata[:888])
-    np.save("./rbBall_val.npy", fdata[888:888+100])
-    np.save("./rbBall_test.npy", fdata[888+100:])
+    split_size = [1000, 200, 100000]
+    split_size = [split_size[0], split_size[0]+split_size[1], split_size[0]+split_size[1]+split_size[2]]
+    np.save("./rbBall_train.npy", fdata[:split_size[0]])
+    np.save("./rbBall_val.npy", fdata[split_size[0]:split_size[1]])
+    # np.save("./rbBall_test.npy", fdata[split_size[1]:split_size[2]])
 
 if __name__ == "__main__":
-
-    split_data()
 
     # main()
 
@@ -56,5 +56,7 @@ if __name__ == "__main__":
     # print(fdata.shape)
     # print(fdata[0:2, ...])
     # print(fdata[0:2, 88:])
+
+    split_data()
 
     print(" - Over -")

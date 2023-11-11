@@ -1,28 +1,40 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-import kk.apps.kk_app as kka
 import kk.uer.kk_base as kkb
 import kk.uer.kk_config as kkc
-import kk.uer.layers.kk_Selfattation as kksa
-import kk.uer.layers.kk_Linear as kkl
-import math
+
+
+def get_normalization(config: kkc.KkmConfig, normalization: str, groups: int = 2):
+    if normalization == "batch":
+        return KkBatchNormal(config)
+    elif normalization == "layer":
+        return KkLayerNormal(config)
+    elif normalization == "instance":
+        return KkInstanceNormal(config)
+    elif normalization == "group":
+        return KkGroupNormal(config, groups)
+    else:
+        return None
 
 
 class KkNormalization(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, *, mean: float = 0, std: float = 1, eps: float = 1e-5):
+    def __init__(self, config: kkc.KkmConfig, *,
+                 mean: float = 0, std: float = 1, eps: float = 1e-5, adapt: bool = True):
         super(KkNormalization, self).__init__(config)
         self.eps = eps
-        self.mean = mean
-        self.std = std
+        if adapt:
+            self.normalization_mean = nn.Parameter(torch.tensor(mean, dtype=torch.float32))
+            self.normalization_std = nn.Parameter(torch.tensor(std, dtype=torch.float32))
+        else:
+            self.normalization_mean = mean
+            self.normalization_std = std
 
     def forward(self, x):
         # x = x.type(torch.float64)
         _mean = x.mean(dim=-1, keepdim=True)
         _var = torch.var(x, dim=-1, keepdim=True, unbiased=False)
         o = (x - _mean) / (_var + self.eps).sqrt()  # 标准
-        o = o * self.std + self.mean                # 自定义
+        o = o * self.normalization_std + self.normalization_mean                # 自定义
         return o
 
 

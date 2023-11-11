@@ -1,26 +1,21 @@
 import os
-import pathlib as path
-import sys
 
 import torch
 import torch.multiprocessing as mp
 import torch.nn as nn
 import torch.utils.data as data
-import torch.nn.functional as F
 
 import torch.distributed as dist
 import torch.utils.data.distributed as dist_data
-import torch.nn.parallel.distributed as dist_nn
+
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 import numpy as np
 import math
-import logging as log
+
 import tqdm
 import kk.kk_utils as kku
 import random
-import time
-import kk.uer.layers.kk_Normalization as kkn
 import kk.uer.kk_config as kkc
 import kk.uer.kk_base as kkb
 import kk.uer.layers.kk_Linear as kkl
@@ -49,7 +44,7 @@ class KkLoss(kkb.KkModule):
 
 
 class KkClassfierLoss(KkLoss):
-    def __init__(self, config: kkc.KkmConfig, *, blocks=[], counts=1, lossFn=nn.BCELoss(), diffOnly=False):
+    def __init__(self, config: kkc.KkmConfig, *, lossFn=nn.BCELoss(), blocks=[], counts=1, diffOnly=False):
         super(KkClassfierLoss, self).__init__(config)
         if isinstance(counts, (int,)):
             self.blocks = []
@@ -88,8 +83,13 @@ class KkExtendLoss(KkLoss):   # 回归损失
 
     def forward(self, o, y):
         loss = self.lossFn(o, y)
-        prec = ((o - y)/ (y + 1e5)).abs().mean()
-        return loss, 0, prec.item()
+        prec = ((o - y) / (y + 1e-7)).abs().mean()
+        if prec > 1:
+            prec = 0
+        else:
+            prec = 1 - prec
+            prec = prec.item()
+        return loss, 0, prec
 
 
 class KkApp(object):
@@ -98,47 +98,30 @@ class KkApp(object):
         self.config = config
         self.model_src = model
         self.last_loss = None
-        if self.config.pt_load:
-            if not os.path.exists(self.config.pt):
-                print("  >> 找不到 KkmConfig中，pt 参数文件{}。".format(self.config.pt));
-            else:
-                print("  >> 加载模型参数文件：{} ... ".format(self.config.pt));
-                _save = torch.load(self.config.pt)
-                if isinstance(_save, tuple):
-                    if _save[0] == "model":
-                        self.model = _save[2]
-                        self.last_loss = _save[1]
-                    elif _save[0] == "dict":
-                        self.model = self.model_src
-                        self.model.load_state_dict(_save[2])
-                        self.last_loss = _save[1]
-                    else:
-                        raise Exception("  >> KkmConfig中，pt 参数文件错误。")
-                else:
-                    self.model = _save
-        else:
-            self.model = self.model_src
+        self.last_perc = None
+        self._model_load()
 
-    def device_init(self):
+    def _device_init(self):
         if self.config.device == "cuda":
             if self.config.gpu_count > 1:
                 # 单机多卡 处理
                 dist.init_process_group(backend=self.config.backend, init_method="env://",
                                         world_size=self.config.world_size, rank=self.config.rank)
                 torch.cuda.set_device(self.config.local_rank)
-                self.model = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
-                self.model = DDP(self.model_src, device_ids=[self.config.local_rank],
-                                 output_device=self.config.local_rank)
+                self.model_src = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
+                self.model = DDP(self.model_src, device_ids=[self.config.local_rank])
             else:
                 # 单机单卡 处理
                 torch.cuda.set_device(self.config.local_rank)
-                self.model = self.model_src.to(self.config.local_rank)
+                self.model_src = self.model_src.to(self.config.device)
+                self.model = self.model_src
         else:
             # cpu
+            self.model_src.to(self.config.device)
             self.model = self.model_src  # .to(self.config.device)
             # self.lossFn.to(self.config.local_rank)
 
-    def device_uninit(self):
+    def _device_uninit(self):
         if self.config.device == "cuda":
             if self.config.gpu_count > 1:
                 # 分布式处理
@@ -147,6 +130,65 @@ class KkApp(object):
             elif self.config.device == "cuda":
                 torch.cuda.empty_cache()
 
+    def _model_load(self):
+        if self.config.pt_load:
+            if not os.path.exists(self.config.pt):
+                print("  >> KkmConfig << 找不到 KkmConfig中，pt 参数文件{}。".format(self.config.pt))
+            else:
+                print("  >> KkmConfig << 加载模型参数文件：{} ... ".format(self.config.pt))
+                _load_obj = torch.load(self.config.pt)
+                if isinstance(_load_obj, tuple):
+                    if _load_obj[0] == "model":
+                        self.model_src = _load_obj[2]
+                        self.last_loss = _load_obj[1][0]
+                        self.last_perc = _load_obj[1][1]
+                    elif _load_obj[0] == "dict":
+                        self.model_src.load_state_dict(_load_obj[2])
+                        self.last_loss = _load_obj[1][0]
+                        self.last_perc = _load_obj[1][1]
+                    else:
+                        raise Exception("  >> KkmConfig << KkmConfig.pt 参数文件错误。")
+                else:
+                    self.model_src = _load_obj
+
+    def _model_save(self, *, ibatch, loss, perc, is_force: bool = False):
+        loss_tuple = (loss, perc)
+
+        def _save(best_only: bool = False):
+            # if isinstance(self.model, DDP):
+            # _model = _model.module
+            _model = self.model_src
+            if self.config.checkpoint_mode is None:
+                return
+            elif self.config.checkpoint_mode == "model":
+                _save_obj = (self.config.checkpoint_mode, loss_tuple, _model)
+                if not best_only:
+                    torch.save(_save_obj, self.config.checkpoint_last)
+                if self.last_loss is None or self.last_loss > loss:
+                    self.last_loss = loss
+                    torch.save(_save_obj, self.config.checkpoint_best)
+                _save_obj = None
+            elif self.config.checkpoint_mode == "dict":
+                _save_obj = (self.config.checkpoint_mode, loss_tuple, _model.state_dict())
+                if not best_only:
+                    torch.save(_save_obj, self.config.checkpoint_last)
+                if self.last_loss is None or self.last_loss > loss:
+                    self.last_loss = loss
+                    torch.save(_save_obj, self.config.checkpoint_best)
+                _save_obj = None
+            else:
+                print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
+
+        if self.config.rank != 0:   # 只在 rank = 0 的进程中保存模型参数
+            return
+        if is_force:
+            _save()
+        else:
+            if ibatch % self.config.save_checkpoint_steps == 0:
+                _save()
+            else:
+                _save(True)
+
 
 class KkInference(KkApp):
     def __init__(self, config: kkc.KkmConfig, model):
@@ -154,7 +196,7 @@ class KkInference(KkApp):
 
     def forward(self, datas):
         # 模型处理
-        self.device_init()
+        self._device_init()
         with torch.no_grad():
             datas = datas.view(-1, datas.size(-1))
             batch = math.ceil(datas.size(0) / self.config.batch_size)
@@ -169,17 +211,18 @@ class KkInference(KkApp):
                     o = self.model(x)
                 out.append(o)
             print(out)
-        self.device_uninit()
+        self._device_uninit()
+
 
 class KkSampler(data.Sampler):
     def __init__(self, config: kkc.KkmConfig, data_source):
         self.config = config
         super(KkSampler, self).__init__()
-        self.data_source = data_source
+        # self.data_source = data_source
         self.batch_size = self.config.batch_size
         self.shuffle = self.config.shuffle
         # 处理
-        self.data_count = len(self.data_source)
+        self.data_count = len(data_source)
         self.indexes = np.arange(self.data_count)
         if self.config.batch_ceil:
             _diff = self.batch_size - self.data_count % self.batch_size
@@ -200,6 +243,7 @@ class KkSampler(data.Sampler):
     def __len__(self):
         return len(self.indexes)
 
+
 class KkDataset(data.Dataset):
     def __init__(self, config: kkc.KkmConfig, data=[], path_np: str = None, x_len: int = -1):
         super(KkDataset, self).__init__()
@@ -214,25 +258,48 @@ class KkDataset(data.Dataset):
                 self.data = data
             else:
                 self.data = torch.as_tensor(data)
-        self.data = self.data.float()
+        self.data = self.data.to(torch.float32)
         self.x_len = x_len
 
     def __getitem__(self, index):
-        return self.data[index, ...]
+        _x = self.data[index]
+        _x.to(self.config.device)
+        x = _x[..., 0:self.x_len]
+        y = _x[..., self.x_len:]
+        return x, y
 
     def __len__(self):
         return len(self.data)
 
-    def dataFn(self, idata):
-        if self.x_len >= idata.size(-1):
-            y = torch.zeros(idata.shape[:-1, 1], dtype=idata.dtype)
-            return idata, y
-        return idata[..., 0:self.x_len], idata[..., self.x_len:]
+
+class KkAppModel(kkb.KkModule):
+    def __init__(self, config: kkc.KkmConfig):
+        super(KkAppModel, self).__init__(config)
+
+    def epoch_reset(self, **args):
+        pass
+
+    def before_forward(self, **args):
+        # print("  >> KkDemoModel.before_forward <<  -------------------------------")
+        # x = args["x"]
+        # o = args["o"]
+        pass
+
+    def forward(self, x):
+        raise NotImplemented(" KkAppModel.forward() 未实现。")
+
+    def after_loss(self, **args):
+        # x = args["x"]
+        # o = args["o"]
+        # y = args["y"]
+        # loss = args["loss"]
+        # print("  >> KkDemoModel.after_loss <<  -------------------------------")
+        pass
 
 
 class KkTrain(KkApp):
     def __init__(self, config: kkc.KkmConfig, *,
-                 model: KkInference, dataset: KkDataset, dataset_val: KkDataset,
+                 model: kkb.KkModule, dataset: KkDataset, dataset_val: KkDataset,
                  loss_fn, optim=None):
         super(KkTrain, self).__init__(config, model)
         self.loss_value = 0.0
@@ -245,38 +312,12 @@ class KkTrain(KkApp):
         self.sampler_val = None
         self.dataLoader_val = None
         self.loss_fn = loss_fn
+        self.val_loss = None
+        self.val_perc = None
         if optim is None:
             self.optim = torch.optim.Adam(model.parameters(), lr=0.001)
         else:
             self.optim = optim
-
-    def _val(self, iepoch: int):
-        all_loss = 0
-        all_prec = 0
-        for ibatch, idata in enumerate(self.dataLoader_val):
-            loss, _prec = self._batch_val(0, ibatch, idata)
-            # print("  >> val{} : loss {}".format(ibatch + 1, loss))
-            if ibatch == 0:
-                all_loss = loss.item()
-                all_prec = _prec
-            else:
-                # all_loss = all_loss * iepoch / (iepoch + 1) + loss / (iepoch + 1)
-                all_loss = all_loss + (loss.item() - all_loss) / (ibatch + 1)
-                all_prec = all_prec + (_prec - all_prec) / (ibatch + 1)
-        print("\n  >> 验证: RANK:{}, epoch {}/{}, loss:{}, prec:{}".format(self.config.rank,
-                                                                           iepoch + 1, self.config.epoch,
-                                                                           all_loss, all_prec))
-        return all_loss
-
-    def _batch_val(self, iepoch, ibatch, idata):
-        with torch.no_grad():
-            if "cuda" == self.config.device:
-                idata = idata.to(self.config.device)
-            x, y = self.dataset_val.dataFn(idata)
-            o = self.model(x)
-            loss, _prec = self._loss(o, y)
-            # loss.backward()
-            return loss, _prec
 
     def _loss(self, o, y):
         _loss_value = 0
@@ -284,114 +325,33 @@ class KkTrain(KkApp):
         if isinstance(loss, tuple):
             if isinstance(self.loss_fn, KkLoss):
                 if loss[1] == 0:
-                    _prec = loss[2]
+                    _perc = loss[2]
                     loss = loss[0]
                 else:
                     raise RuntimeError(" KkLoss 返回值错误。")
         else:
-            _prec = loss.item()
-        return loss, _prec
+            _perc = loss.item()
+        return loss, round(_perc * 100, 2)
 
-    def _batch(self, iepoch, ibatch, idata):
-        if "cuda" == self.config.device:
-            idata = idata.to(self.config.local_rank)
-        x, y = self.dataset.dataFn(idata)
-        if hasattr(self.model, "before_forward"):
-            self.model.before_forward(x=x, y=y)
-        o = self.model(x)
-        loss, _prec = self._loss(o, y)
-        if hasattr(self.model, "after_loss"):
-            self.model.after_loss(x=x, y=y, loss=loss)
-        loss.backward()
-        return loss, _prec
-
-    def _save(self, ibatch, loss, focus: bool = False):
-        if self.config.rank != 0:
-            return
-        _model = self.model
-        if isinstance(self.model, DDP):
-            _model = _model.module
-        if focus:
-            if self.config.checkpoint_mode is None:
-                pass
-            elif self.config.checkpoint_mode == "model":
-                _save_obj = (self.config.checkpoint_mode, loss, _model)
-                torch.save(_save_obj, self.config.checkpoint_last)
-                if self.last_loss is None or self.last_loss > loss:
-                    self.last_loss = loss
-                    torch.save(_save_obj, self.config.checkpoint_best)
-            elif self.config.checkpoint_mode == "dict":
-                _save_obj = (self.config.checkpoint_mode, loss, _model.state_dict())
-                torch.save(_save_obj, self.config.checkpoint_last)
-                if self.last_loss is None or self.last_loss > loss:
-                    self.last_loss = loss
-                    torch.save(_save_obj, self.config.checkpoint_best)
-            else:
-                print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
-        else:
-            if self.config.checkpoint_mode is None:
-                pass
-            elif self.config.checkpoint_mode == "model":
-                if ibatch % self.config.save_checkpoint_steps == 0:
-                    _save_obj = (self.config.checkpoint_mode, loss, _model)
-                    torch.save(_save_obj, self.config.checkpoint_last)
-                if self.last_loss is None or self.last_loss > loss:
-                    self.last_loss = loss
-                    _save_obj = (self.config.checkpoint_mode, loss, _model)
-                    torch.save(_save_obj, self.config.checkpoint_best)
-            elif self.config.checkpoint_mode == "dict":
-                if ibatch % self.config.save_checkpoint_steps == 0:
-                    _save_obj = (self.config.checkpoint_mode, loss, _model.state_dict())
-                    torch.save(_save_obj, self.config.checkpoint_last)
-
-                if self.last_loss is None or self.last_loss > loss:
-                    self.last_loss = loss
-                    _save_obj = (self.config.checkpoint_mode, loss, _model.state_dict())
-                    torch.save(_save_obj, self.config.checkpoint_best)
-            else:
-                print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
-        _save_obj = None
-
-    def _epoch(self, iepoch: int):
+    def _optim(self, *, ibatch: int, loss, perc):
+        if self.config.sys_ibatch == 0 and self.config.sys_iepoch == 0:
+            # 检查Weight权重是否存在全为0的情况，pytorch有时在启动时
+            _params = self.model_src.named_parameters()
+            for ipname, iparam in _params:
+                # if ipname.endswith("weight") and torch.sum(iparam) > 0:
+                if not torch.nonzero(iparam).size(0) > 0:
+                    print("  >> KkTrain._optim <<  模型参数 {} 权重为 0 ，请确认该参数是否需要初始化。".format(ipname))
+        self.optim.step()
         self.optim.zero_grad()
-        if hasattr(self.model_src, "reset_epoch"):
-            self.model_src.reset_epoch(iepoch=iepoch)
-        if self.config.use_layer_optim and self.config.use_layer_optim_by_batch:
-            for ibatch, idata in enumerate(self.dataLoader):
-                self.config.auto_ibatch = ibatch
-                self._layer_optim(self.model, batch_sign=True)
-                loss = self._batch(iepoch, ibatch, idata)
-                self.optim.step()
-                self.optim.zero_grad()
-                self._save(ibatch, loss, focus=False)
-        else:
-            need_optim = False
-            for ibatch, idata in enumerate(self.dataLoader):
-                # 按层优化
-                self.config.auto_ibatch = ibatch
-                loss, prec = self._batch(iepoch, ibatch, idata)
-                # print("  >> Epoch {}/{}, batch {}/{}, rank:{}, loss:{}".format(iepoch, self.config.epoch,
-                #                                              ibatch, len(self.dataLoader), self.config.rank, loss))
-                need_optim = True
-                if ibatch % self.config.accumulation_steps == 0:
-                    self.optim.step()
-                    self.optim.zero_grad()
-                    need_optim = False
-                    self._save(ibatch, loss, focus=False)
-            if need_optim:
-                self.optim.step()
-                self.optim.zero_grad()
-                need_optim = False
-                self._save(ibatch, loss, focus=False)
-
+        self._model_save(ibatch=ibatch, loss=loss, perc=perc, is_force=False)
 
     def _layer_optim_init(self, model):
         cfg = self.config
         m_cfg = {}
-        if model in cfg.auto_layer_optim_models:
-            m_cfg = cfg.auto_layer_optim_models.get(model)
+        if model in cfg.sys_layer_optim_models:
+            m_cfg = cfg.sys_layer_optim_models.get(model)
         else:
-            cfg.auto_layer_optim_models[model] = m_cfg
+            cfg.sys_layer_optim_models[model] = m_cfg
         m_cfg["parameters_layers"] = 0
         m_cfg["layer_optim_loops"] = 0
         m_cfg["layer_optim_times"] = 0
@@ -408,11 +368,11 @@ class KkTrain(KkApp):
 
     def _layer_optim_finished(self, model):
         cfg = self.config
-        m_cfg = cfg.auto_layer_optim_models.get(model)
+        m_cfg = cfg.sys_layer_optim_models.get(model)
         m_cfg["layer_optim_finished"] = True
         _stoped = []
         if cfg.use_layer_optim_finished_rand > 0:
-            _stoped = [random.randint(0, m_cfg["parameters_layers"] - 1)\
+            _stoped = [random.randint(0, m_cfg["parameters_layers"] - 1)
                        for _ in range(cfg.use_layer_optim_finished_rand)]
         _layers = model.modules()
         _i = -1
@@ -424,16 +384,12 @@ class KkTrain(KkApp):
                 for _iparameter in _parameters:
                     _iparameter.requires_grad = _sign
 
-        # _parameters = model.parameters()
-        # for _iparam in _parameters:
-        #     _iparam.requires_grad = True
-
-
-    def _layer_optim(self, model, batch_sign: bool = False):
+    def _layer_optim(self, *, batch_epoch: bool = True):
         cfg = self.config
-        m_cfg = cfg.auto_layer_optim_models.get(model)
+        model = self.model
+        m_cfg = cfg.sys_layer_optim_models.get(model)
         if ((not cfg.use_layer_optim)
-                or (batch_sign != cfg.use_layer_optim_by_batch)):
+                or (batch_epoch != cfg.use_layer_optim_by_batch)):
             return
         if m_cfg["layer_optim_finished"]:
             self._layer_optim_finished(model)
@@ -441,12 +397,12 @@ class KkTrain(KkApp):
 
         _need_optim = False
         if cfg.use_layer_optim_by_batch:
-            _all_batch = cfg.auto_iepoch * cfg.batch_count + cfg.auto_ibatch
+            _all_batch = cfg.sys_iepoch * cfg.batch_count + cfg.sys_ibatch
             if _all_batch % cfg.use_layer_optim_by_count == 0:
                 _need_optim = True
         else:
             # 一个 epoch 的开始
-            if cfg.auto_iepoch % cfg.use_layer_optim_by_count == 0:
+            if cfg.sys_iepoch % cfg.use_layer_optim_by_count == 0:
                 _need_optim = True
         if _need_optim:
             # 具体优化
@@ -493,10 +449,7 @@ class KkTrain(KkApp):
     def __call__(self, *args, **kwargs):
         self.train()
 
-    def train(self):
-        self.device_init()
-        self.config.auto_init()
-
+    def _data_init(self):
         need_dataloader_init = True
         if self.config.device == "cuda":
             if self.config.gpu_count > 1:
@@ -510,13 +463,13 @@ class KkTrain(KkApp):
                 self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
                                                   shuffle=False,
                                                   sampler=self.sampler, num_workers=self.config.num_workers,
-                                                  pin_memory=self.config.pin_memory)
+                                                  pin_memory=True)
                 self.sampler_val = dist_data.DistributedSampler(self.dataset_val, rank=self.config.rank,
                                                                 num_replicas=self.config.world_size)
                 self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=self.config.batch_size,
                                                       shuffle=False,
                                                       sampler=self.sampler_val, num_workers=self.config.num_workers,
-                                                      pin_memory=self.config.pin_memory)
+                                                      pin_memory=True)
                 need_dataloader_init = False
 
             else:
@@ -530,57 +483,131 @@ class KkTrain(KkApp):
         if need_dataloader_init:
             # self.sampler = data.SequentialSampler(self.dataset)
             self.sampler = KkSampler(self.config, self.dataset)
-            self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
-                                              shuffle=False,
-                                              sampler=self.sampler, num_workers=self.config.num_workers,
-                                              pin_memory=self.config.pin_memory)
+            # self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
+            #                                   shuffle=False, num_workers=0)
+            self.dataLoader = data.DataLoader(self.dataset, batch_size=2, shuffle=False, num_workers=0,
+                                              pin_memory=self.config.pin_memory, sampler=self.sampler)
 
             self.sampler_val = KkSampler(self.config, self.dataset_val)
             self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=self.config.batch_size,
-                                                  shuffle=False,
-                                                  sampler=self.sampler_val, num_workers=self.config.num_workers,
+                                                  shuffle=False, sampler=self.sampler_val, num_workers=0,
                                                   pin_memory=self.config.pin_memory)
 
-        # 开始显示
-        if self.config.rank == 0:
-            print("  >> 开始训练，epoch:{}, batch_size:{}, world_size:{}, gpu_count:{}, loss:{}"
-                  .format(self.config.epoch, self.config.batch_size,
-                          self.config.world_size, self.config.gpu_count, self.last_loss))
+    def _val(self, iepoch: int):
+        val_loss = 0
+        val_perc = 0
+        for ibatch, (x, y) in enumerate(self.dataLoader_val):
+            x = x.to(self.config.device)
+            y = y.to(self.config.device)
+            loss, _perc = self._val_batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
+            # print("  >> val{} : loss {}".format(ibatch + 1, loss))
+            if ibatch == 0:
+                val_loss = loss
+                val_perc = _perc
+            else:
+                # val_loss = val_loss * iepoch / (iepoch + 1) + loss / (iepoch + 1)
+                val_loss = val_loss + (loss - val_loss) / (ibatch + 1)
+                val_perc = val_perc + (_perc - val_perc) / (ibatch + 1)
+
+        # 显示结果
+        _loss_sign = "(*)"
+        _perc_sign = "(*)"
+        if self.val_loss is not None:
+            _loss_diff = self.val_loss - val_loss
+            _loss_sign = "(-" if _loss_diff > 0 else "(+"
+            _loss_sign += str(abs(_loss_diff)) + ")"
+
+            _perc_diff = self.val_perc - val_perc
+            _perc_sign = "(-" if _perc_diff > 0 else "(+"
+            _perc_sign += str(abs(_perc_diff)) + "%)"
+
+        print("\n  >> 验证: RANK:{}/{}, epoch {}/{}, loss{} : {}, prec{} : {}%"
+              .format(self.config.rank,self.config.gpu_count,iepoch + 1, self.config.epoch,
+                      _loss_sign, val_loss, _perc_sign, val_perc))
+        self.val_loss = val_loss
+        self.val_perc = val_perc
+        return val_loss, val_perc
+
+    def _val_batch(self, *, iepoch, ibatch, x, y):
+        with torch.no_grad():
+            o = self.model(x)
+            loss, _perc = self._loss(o, y)
+            # loss.backward()
+            return round(loss.item(), 2), _perc
+
+    def _batch(self, *, iepoch, ibatch, x, y):
+        x = x.to(self.config.device)
+        y = y.to(self.config.device)
+        if hasattr(self.model, "before_forward"):
+            self.model.before_forward(x=x, y=y)
+        o = self.model(x)
+        loss, _perc = self._loss(o, y)
+        if hasattr(self.model, "after_loss"):
+            self.model.after_loss(x=x, o=o, y=y, loss=loss)
+        loss.backward()
+        return round(loss.item(), 0), _perc
+
+    def _epoch(self, iepoch: int):
+        # self.optim.zero_grad()
+        if hasattr(self.model_src, "epoch_reset"):
+            self.model_src.epoch_reset(iepoch=iepoch)
+        if self.config.use_layer_optim and self.config.use_layer_optim_by_batch:
+            for ibatch, (x, y) in enumerate(self.dataLoader):
+                self.config.sys_ibatch = ibatch
+                self._layer_optim(batch_epoch=True)
+                loss, perc = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
+                self._optim(ibatch=ibatch, loss=loss, perc=perc)
+        else:
+            need_optim = False
+            for ibatch, (x, y) in enumerate(self.dataLoader):
+                # 按层优化
+                self.config.sys_ibatch = ibatch
+                loss, perc = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
+                # print("  >> Epoch {}/{}, batch {}/{}, rank:{}, loss:{}".format(iepoch, self.config.epoch,
+                #                                              ibatch, len(self.dataLoader), self.config.rank, loss))
+                need_optim = True
+                if ibatch % self.config.accumulation_steps == 0:
+                    self._optim(ibatch=ibatch, loss=loss, perc=perc)
+                    need_optim = False
+
+            if need_optim:
+                self._optim(ibatch=ibatch, loss=loss, perc=perc)
+                need_optim = False
+
+    def train(self):
+        self.config.sys_init()
+        self._device_init()
+        self._data_init()
         self._layer_optim_init(self.model)
-        for iepoch in tqdm.tqdm(range(self.config.epoch), desc=f" Epoch"):
+        # 开始训练
+        if self.config.rank == 0:
+            print("\n  >> 开始训练 << epoch:{}, batch_size:{}, world_size:{}, gpu_count:{}, loss:{}, perc:{}"
+                  .format(self.config.epoch, self.config.batch_size,
+                          self.config.world_size, self.config.gpu_count,
+                          self.last_loss, self.last_perc))
+        for iepoch in tqdm.tqdm(range(self.config.epoch),  desc='Epoch ', ncols=66):
             # 训练
-            self.config.auto_iepoch = iepoch
-            self.config.auto_ibatch = -1
-            self.config.auto_training = True
+            self.config.sys_iepoch = iepoch
+            self.config.sys_ibatch = -1
+            self.config.sys_training = True    # 标记状态
             self.model.train()
             if isinstance(self.sampler, dist_data.DistributedSampler):
                 self.sampler.set_epoch(iepoch)
-            self._layer_optim(self.model, batch_sign=False)
+            self._layer_optim(batch_epoch=False)
+
+            # 进入 一个 epoch
             self._epoch(iepoch)
 
             # 进行验证
-            self.config.auto_training = False
+            self.config.sys_training = False
             self.model.eval()
             if isinstance(self.sampler_val, dist_data.DistributedSampler):
                 self.sampler_val.set_epoch(iepoch)
-            loss_value = self._val(iepoch)
-            if loss_value < self.config.stop_train_loss:
-                print("  >> 当前损失已满足系统要求，训练结束。")
+            val_loss, val_perc = self._val(iepoch)
+            if val_perc > self.config.stop_train_perc:
+                print("  >> KkTrain.train << 当前预测精度已满足系统要求，训练结束。")
                 break
-        self.device_uninit()
-
-
-class DemoModel(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig):
-        super(DemoModel, self).__init__(config)
-        self.backbone = nn.Sequential(
-            kkl.KkLinear(config, 88, 880, normalization="batch"),
-            kkl.KkLinear(config, 880, 88),
-            kkl.KkLinear(config, 88, 1))
-
-    def forward(self, x):
-        o = self.backbone(x)
-        return o
+        self._device_uninit()
 
 
 def torchrun():
@@ -593,9 +620,9 @@ def torchrun():
     datas_val = torch.randn(80, 89)
     datas_val[:, 88] = datas_val[:, 0:88].sum(dim=1) / 3.1415926
     dataset_val = KkDataset(config, datas_val)
-    model = DemoModel(config)
+    model = KkDemoModel(config)
     loss_fn = KkExtendLoss(config, lossFn=nn.MSELoss())
-    optim = torch.optim.Adam(DemoModel(config).parameters(), lr=0.001)
+    optim = torch.optim.Adam(KkDemoModel(config).parameters(), lr=0.001)
     trainer = KkTrain(config, model, dataset, dataset_val, loss_fn, optim)
     trainer.train()
 
@@ -624,17 +651,27 @@ def python():
 
     torchrun()
 
-class TestModel(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig):
-        super(TestModel, self).__init__(config)
-        self.Linear = kkl.KkLinear(config, 2, 1)
+
+class KkDemoModel(KkAppModel):
+    def __init__(self, config: kkc.KkmConfig, *, in_feather: int = 2):
+        super(KkDemoModel, self).__init__(config)
+        self.Linear = kkl.KkLinear(config, in_feather, 1)
 
     def forward(self, x):
         o = self.Linear(x)
         return o
 
+    def after_loss(self, **args):
+        # x = args["x"]
+        # o = args["o"]
+        # y = args["y"]
+        # loss = args["y"]
+        # print(args["o"])
+        # print(args["y"])
+        pass
 
-def test():
+
+def demo():
     os.environ['RANK'] = "0"
     os.environ['LOCAL_RANK'] = "0"
     os.environ['WORLD_SIZE'] = "1"
@@ -642,26 +679,30 @@ def test():
     os.environ['MASTER_PORT'] = "16666"
 
     config = kkc.KkmConfig(__file__)
-    datas = torch.randn(1000, 3)
-    # print(datas[:, 0:88].sum(dim=1) / 3.1415926)
-    datas[:, 2] = datas[:, 0:2].sum(dim=-1) / 3.1415926
+    config.batch_size = 2
+
+    _feather = 100
+    datas = torch.randn(10000, _feather)
+    datas[:, -1] = datas[:, 0:-1].sum() * 3.1415926 + random.randint(0, 6)
     dataset = KkDataset(config, datas)
-    datas_val = torch.randn(80, 3)
-    datas_val[:, 2] = datas_val[:, 0:2].sum(dim=-1) / 3.1415926
+    datas_val = torch.randn(100, _feather)
+    datas_val[:, -1] = datas_val[:, 0:-1].sum() * 3.1415926 + random.randint(0, 6)
     dataset_val = KkDataset(config, datas_val)
-    model = TestModel(config)
+    # dataset = TestDataset(config)
+    # dataset_val = TestDataset(config)
+    model = KkDemoModel(config, in_feather=99)
     loss_fn = KkExtendLoss(config, lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
     trainer = KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
                       loss_fn=loss_fn, optim=optim)
     trainer.train()
 
+
 if __name__ == "__main__":
-    test()
+    demo()
     # python()
     # python_spawn()
     # torchrun()
-
 
     # config = kkc.KkmConfig(__file__)
     # loss = KkClassfierLoss(config, counts=1, lossFn=nn.BCELoss())
