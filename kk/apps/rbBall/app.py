@@ -1,16 +1,14 @@
 import numpy as np
 import os
+os.environ["PYTHONPATH"] = os.path.dirname(os.path.abspath("./../../../"))
+
 import torch
-import torch.distributed as dist
-import torch.utils.data as data
-import torch.nn as nn
-import logging as log
-import tqdm
 import models as models
 import kk.apps.kk_app as kka
 import kk.uer.kk_config as kkc
 
-if __name__ == "__main__":
+
+def train():
     _path = os.path.dirname(os.path.abspath(__file__))
     config = kkc.KkmConfig(_path)
 
@@ -24,3 +22,8 @@ if __name__ == "__main__":
     trainer = kka.KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
                           loss_fn=loss_fun, optim=optim)
     trainer.train()
+
+def prediction():
+
+if __name__ == "__main__":
+    train()

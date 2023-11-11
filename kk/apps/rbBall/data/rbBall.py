@@ -40,6 +40,7 @@ def main():
     odata = np.array(odata)
     np.save("./rbBall.npy", odata)
 
+
 def split_data():
     fdata = np.load("./rbBall.npy")
     split_size = [1000, 200, 100000]
@@ -47,6 +48,7 @@ def split_data():
     np.save("./rbBall_train.npy", fdata[:split_size[0]])
     np.save("./rbBall_val.npy", fdata[split_size[0]:split_size[1]])
     # np.save("./rbBall_test.npy", fdata[split_size[1]:split_size[2]])
+
 
 if __name__ == "__main__":
 
