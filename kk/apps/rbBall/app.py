@@ -26,5 +26,12 @@ def prediction():
     _path = ""
 
 
+def test():
+    _path = os.path.dirname(os.path.abspath(__file__))
+    config = kkc.KkmConfig(_path)
+    dataset = kka.KkDataset(config, path_np="data/rbBall_train.npy", x_len=88)
+    for i, (x, y) in enumerate(dataset):
+        print(i, " : ", x.shape, y.shape)
+
 if __name__ == "__main__":
-    train()
+    test()
