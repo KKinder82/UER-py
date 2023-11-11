@@ -699,6 +699,9 @@ def demo():
 
 
 if __name__ == "__main__":
+    # 系统环境变量中 添加 "PYTHONPATH"， 指向项目
+    # 在moudle 文件中 增加 __init__.py 文件
+
     demo()
     # python()
     # python_spawn()
