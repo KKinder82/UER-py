@@ -34,7 +34,7 @@ class KkmConfig(object):
         self.batch_size = 10
         self.batch_count = 0
         self.num_workers = self.world_size
-        self.pin_memory = True
+        self.pin_memory = False
         self.batch_ceil = False      # 当数据不能整除时，是否补齐
         # 训练
         self.sys_iepoch = 0

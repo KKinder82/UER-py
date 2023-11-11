@@ -453,7 +453,6 @@ class KkTrain(KkApp):
         need_dataloader_init = True
         if self.config.device == "cuda":
             if self.config.gpu_count > 1:
-                print("  >> KkTrain._data_init <<  分布式处理，数据集分布式处理。")
                 # 单机多卡、多机多卡
                 if isinstance(self.loss_fn, nn.Module):
                     self.loss_fn.to(self.config.local_rank)
@@ -464,13 +463,14 @@ class KkTrain(KkApp):
                 self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
                                                   shuffle=False,
                                                   sampler=self.sampler, num_workers=self.config.num_workers,
-                                                  pin_memory=True)
+                                                  pin_memory=self.config.pin_memory)
+
                 self.sampler_val = dist_data.DistributedSampler(self.dataset_val, rank=self.config.rank,
-                                                                num_replicas=self.config.world_size)
+                                                                num_replicas=self.config.world_size, shuffle=False)
                 self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=self.config.batch_size,
                                                       shuffle=False,
                                                       sampler=self.sampler_val, num_workers=self.config.num_workers,
-                                                      pin_memory=True)
+                                                      pin_memory=self.config.pin_memory)
                 need_dataloader_init = False
 
             else:

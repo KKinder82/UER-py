@@ -54,11 +54,11 @@ if __name__ == "__main__":
 
     # main()
 
-    # fdata = np.load("./rbBall.npy")
-    # print(fdata.shape)
-    # print(fdata[0:2, ...])
-    # print(fdata[0:2, 88:])
+    fdata = np.load("./rbBall_train.npy")
+    print(fdata.shape)
+    print(fdata[0:2, ...])
+    print(fdata[0:2, 88:])
 
-    split_data()
+    # split_data()
 
     print(" - Over -")
