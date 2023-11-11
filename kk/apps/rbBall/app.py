@@ -1,6 +1,6 @@
 import numpy as np
 import os
-os.environ["PYTHONPATH"] = os.path.dirname(os.path.abspath("./../../../"))
+os.environ["PYTHONPATH"] = os.path.abspath("./../../../")
 
 import torch
 import kk.apps.rbBall.models as models
@@ -27,5 +27,7 @@ def train():
 def prediction():
     _path = ""
 
+
 if __name__ == "__main__":
+    # print(os.path.abspath("./../../../"))
     train()
