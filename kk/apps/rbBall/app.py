@@ -4,6 +4,9 @@ import torch
 import kk.apps.rbBall.models as models
 import kk.apps.kk_app as kka
 import kk.uer.kk_config as kkc
+import torch.utils.data as data
+import torch.utils.data.distributed as dist_data
+
 
 
 def train():
@@ -30,7 +33,14 @@ def test():
     _path = os.path.dirname(os.path.abspath(__file__))
     config = kkc.KkmConfig(_path)
     dataset = kka.KkDataset(config, path_np="data/rbBall_train.npy", x_len=88)
-    for i, (x, y) in enumerate(dataset):
+
+    sampler = dist_data.DistributedSampler(dataset, rank=0,
+                                           num_replicas=2, shuffle=False)
+    dataLoader = data.DataLoader(dataset, batch_size=config.batch_size,
+                                 shuffle=False, sampler=sampler, num_workers=config.num_workers,
+                                 pin_memory=config.pin_memory)
+
+    for i, (x, y) in enumerate(dataLoader):
         print(i, " : ", x.shape, y.shape)
 
 if __name__ == "__main__":
