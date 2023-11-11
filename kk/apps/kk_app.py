@@ -153,11 +153,10 @@ class KkApp(object):
 
     def _model_save(self, *, ibatch, loss, perc, is_force: bool = False):
         loss_tuple = (loss, perc)
-
         def _save(best_only: bool = False):
-            # if isinstance(self.model, DDP):
-            # _model = _model.module
-            _model = self.model_src
+            _model = self.model
+            if isinstance(_model, DDP):
+                _model = _model.module
             if self.config.checkpoint_mode is None:
                 return
             elif self.config.checkpoint_mode == "model":
