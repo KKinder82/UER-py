@@ -21,9 +21,9 @@ class KkLinear(kkb.KkModule):
         self.register_buffer("perc_weights", perc_weights)
 
         weight = kkb.get_randn_parameter(inner_feather, out_feather, std=0.01)
-        self.weight = nn.Parameter(weight)
+        self.register_parameter("weight", weight)
         bias = kkb.get_randn_parameter(1, out_feather, std=0.01)
-        self.bias = nn.Parameter(bias)
+        self.register_parameter("bias", bias)
 
     def forward(self, x):
         o = torch.matmul(x, self.perc_weights)
