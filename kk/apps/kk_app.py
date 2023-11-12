@@ -622,9 +622,9 @@ class KkTrain(KkApp):
             self._device_uninit()
 
 
-class KkDemoModel(KkAppModel):
-    def __init__(self, config: kkc.KkmConfig, *, in_feather: int = 2):
-        super(KkDemoModel, self).__init__(config)
+class KkDemoModel(nn.Module):
+    def __init__(self, *, in_feather: int = 2):
+        super(KkDemoModel, self).__init__()
         self.Linear = nn.Linear(in_feather, 1)
 
     def forward(self, x):
