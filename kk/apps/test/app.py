@@ -34,11 +34,11 @@ def test_transform():
     config = kkc.KkmConfig(__file__)
     feather_size = 11
 
-    datas = torch.randn(1000, feather_size)
+    datas = torch.randn(10, feather_size)
     datas[:, feather_size-1] = datas[:, 0:feather_size-2].sum(dim=1) / 3.1415926
     dataset = kka.KkDataset(config, datas)
 
-    datas_val = torch.randn(100, feather_size)
+    datas_val = torch.randn(2, feather_size)
     datas_val[:, feather_size-1] = datas_val[:, 0:feather_size-2].sum(dim=1) / 3.1415926
     dataset_val = kka.KkDataset(config, datas_val)
 

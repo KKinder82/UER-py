@@ -38,7 +38,7 @@ class KkSelfAttationItem(kkb.KkModule):
         #     pass
         # else:
         #     o = self.Norm(o)
-        # return o
+        return o
 
 
 class KkSelfAttation(kkb.KkModule):
