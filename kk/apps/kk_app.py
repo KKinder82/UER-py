@@ -467,14 +467,14 @@ class KkTrain(KkApp):
                 # , init_method="env://",  # init_method="store" 手工
                 # world_size=self.config.world_size, rank=self.config.local_rank)
                 self.sampler = dist_data.DistributedSampler(self.dataset, rank=self.config.local_rank,
-                                                            num_replicas=self.config.world_size, shuffle=False)
+                                                            shuffle=False)
                 self.dataLoader = data.DataLoader(self.dataset, batch_size=self.config.batch_size,
                                                   shuffle=False,
                                                   sampler=self.sampler, num_workers=self.config.num_workers,
                                                   pin_memory=self.config.pin_memory)
 
                 self.sampler_val = dist_data.DistributedSampler(self.dataset_val, rank=self.config.rank,
-                                                                num_replicas=self.config.world_size, shuffle=False)
+                                                                shuffle=False)
                 self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=self.config.batch_size,
                                                       shuffle=False,
                                                       sampler=self.sampler_val, num_workers=self.config.num_workers,
@@ -624,8 +624,8 @@ class KkTrain(KkApp):
                     self.sampler_val.set_epoch(iepoch)
                 val_loss, val_perc = self._val(iepoch)
                 if val_loss < self.config.stop_train_loss:
-                    print("  >> KkTrain.train << 当前预测精度已满足系统设计要求，训练结束。")
-                    break
+                    print("  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。".format(self.config.rank))
+                    exit(0)
         finally:
             self._device_uninit()
 
