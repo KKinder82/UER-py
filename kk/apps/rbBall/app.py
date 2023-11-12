@@ -5,6 +5,7 @@ import torch.nn as nn
 import kk.apps.rbBall.models as models
 import kk.apps.kk_app as kka
 import kk.uer.kk_config as kkc
+import kk.kk_utils as kku
 import torch.utils.data as data
 import torch.utils.data.distributed as dist_data
 
@@ -51,12 +52,8 @@ def test():
 
 
 if __name__ == "__main__":
-    print(os.environ['RANK'])
-    print(os.environ['LOCAL_RANK'])
-    print(os.environ['WORLD_SIZE'])
-    print(os.environ['MASTER_ADDR'])
-    print(os.environ['MASTER_PORT'])
-    exit(0)
+    print(kku.env_int('RANK', 0))
+    print(kku.env_int('LOCAL_RANK', 0))
     # os.environ['RANK'] = "0"
     # os.environ['LOCAL_RANK'] = "0"
     # os.environ['WORLD_SIZE'] = "2"

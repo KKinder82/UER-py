@@ -2,10 +2,12 @@ import json
 import os
 import torch
 
+
 def env_int(name: str, default=0):
     if name in os.environ:
         return int(os.environ[name])
     return default
+
 
 def env_value(name: str, default: str = ""):
     if name in os.environ:
