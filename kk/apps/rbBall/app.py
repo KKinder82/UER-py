@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import torch
+import torch.nn as nn
 import kk.apps.rbBall.models as models
 import kk.apps.kk_app as kka
 import kk.uer.kk_config as kkc
@@ -48,9 +49,15 @@ def test():
     dataLoader = data.DataLoader(dataset, batch_size=config.batch_size,
                                  shuffle=False, sampler=sampler, num_workers=2,
                                  pin_memory=config.pin_memory)
+    # for i, (x, y) in enumerate(dataLoader):
+    #     print(i, " : ", x.shape, y.shape)
 
-    for i, (x, y) in enumerate(dataLoader):
-        print(i, " : ", x.shape, y.shape)
+    model = kka.KkDemoModel(config, in_feather=99)
+    loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())
+    optim = torch.optim.Adam(model.parameters(), lr=0.001)
+    trainer = kka.KkTrain(config, model=model, dataset=dataset, dataset_val=dataset,
+                      loss_fn=loss_fn, optim=optim)
+    trainer.train()
 
 
 if __name__ == "__main__":
