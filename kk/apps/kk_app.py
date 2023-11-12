@@ -623,7 +623,7 @@ class KkTrain(KkApp):
 class KkDemoModel(KkAppModel):
     def __init__(self, config: kkc.KkmConfig, *, in_feather: int = 2):
         super(KkDemoModel, self).__init__(config)
-        self.Linear = kkl.KkLinear(config, in_feather, 1)
+        self.Linear = nn.Linear(in_feather, 1)
 
     def forward(self, x):
         o = self.Linear(x)
