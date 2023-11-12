@@ -42,7 +42,7 @@ def test_transform():
     datas_val[:, feather_size-1] = datas_val[:, 0:feather_size-2].sum(dim=1) / 3.1415926
     dataset_val = kka.KkDataset(config, datas_val)
 
-    model = models.KkTestTransformerModel(config)
+    model = models.KkTestSelfAttationModel(config)
     loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
 
