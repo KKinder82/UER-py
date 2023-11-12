@@ -97,9 +97,9 @@ class KkApp(object):
         super(KkApp, self).__init__()
         self.config = config
         self.model_src = model
+        self.last_loss = (None, None)
+        # 加载参数文件
         self._model_load()
-        self.last_loss = None
-        self.last_perc = None
 
     def _device_init(self):
         if self.config.device == "cuda":
@@ -112,22 +112,19 @@ class KkApp(object):
                 dist.init_process_group(backend=self.config.backend, init_method="env://",
                                         world_size=self.config.world_size, rank=self.config.rank)
                 torch.cuda.set_device(self.config.local_rank)
-                self.model = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
-                self.model = DDP(self.model, device_ids=[self.config.local_rank])
-                print("  >> KkApp._device_init << Pytorch:GPU 多机多卡初始化 [结束]")
+                self.model_src = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
+                self.model = DDP(self.model_src, device_ids=[self.config.local_rank])
             else:
                 # 单机单卡 处理
                 print("  >> KkApp._device_init << Pytorch:GPU 单机单卡初始化 ")
                 torch.cuda.set_device(self.config.local_rank)
                 self.model_src = self.model_src.to(self.config.device)
                 self.model = self.model_src
-                print("  >> KkApp._device_init << Pytorch:GPU 单机单卡初始化 【结束】")
         else:
             # cpu
             print("  >> KkApp._device_init << Pytorch:CPU 初始化 ")
             # self.model_src.to(self.config.device)
             self.model = self.model_src  # .to(self.config.device)
-            print("  >> KkApp._device_init << Pytorch:CPU 初始化 【结束】 ")
 
     def _device_uninit(self):
         if self.config.device == "cuda":
@@ -147,15 +144,14 @@ class KkApp(object):
                 _load_obj = torch.load(self.config.pt)
                 if isinstance(_load_obj, tuple):
                     if len(_load_obj) == 3:
+                        print(_load_obj[1])
                         if _load_obj[0] == "model":
                             self.model_src = _load_obj[2]
-                            self.last_loss = _load_obj[1][0]
-                            self.last_perc = _load_obj[1][1]
+                            self.last_loss = _load_obj[1]
                             return True
                         elif _load_obj[0] == "dict":
                             self.self.model_src.load_state_dict(_load_obj[2])
-                            self.last_loss = _load_obj[1][0]
-                            self.last_perc = _load_obj[1][1]
+                            self.last_loss = _load_obj[1]
                             return True
                         else:
                             pass
@@ -165,8 +161,8 @@ class KkApp(object):
                     pass
                 raise Exception("  >> KkmConfig << KkmConfig.pt 参数文件格式错误。")
 
-    def _model_save(self, *, ibatch, loss, perc, is_force: bool = False):
-        loss_tuple = (loss, perc)
+    def _model_save(self, *, ibatch, loss, is_force: bool = False):
+        loss_tuple = loss
 
         def _save(best_only: bool = False):
             _model = self.model_src
@@ -176,18 +172,14 @@ class KkApp(object):
                 _save_obj = (self.config.checkpoint_mode, loss_tuple, _model)
                 if not best_only:
                     torch.save(_save_obj, self.config.checkpoint_last)
-                if self.last_loss is None or self.last_loss > loss:
-                    self.last_loss = loss
-                    self.last_perc = perc
+                if self.last_loss[0] is None or self.last_loss[0] > loss_tuple[0]:
                     torch.save(_save_obj, self.config.checkpoint_best)
                 _save_obj = None
             elif self.config.checkpoint_mode == "dict":
                 _save_obj = (self.config.checkpoint_mode, loss_tuple, _model.state_dict())
                 if not best_only:
                     torch.save(_save_obj, self.config.checkpoint_last)
-                if self.last_loss is None or self.last_loss > loss:
-                    self.last_loss = loss
-                    self.last_perc = perc
+                if self.last_loss[0] is None or self.last_loss[0] > loss_tuple[0]:
                     torch.save(_save_obj, self.config.checkpoint_best)
                 _save_obj = None
             else:
@@ -315,7 +307,6 @@ class KkTrain(KkApp):
                  loss_fn, optim=None):
         super(KkTrain, self).__init__(config, model)
         self.loss_value = 0.0
-        self.config = config
         self.gpu_count = config.gpu_count
         self.dataset = dataset
         self.sampler = None
@@ -343,9 +334,9 @@ class KkTrain(KkApp):
                     raise RuntimeError(" KkLoss 返回值错误。")
         else:
             _perc = loss.item()
-        return loss, round(_perc * 100, 2)
+        return loss, _perc * 100
 
-    def _optim(self, *, ibatch: int, loss, perc):
+    def _optim(self, *, ibatch: int, loss):
         if self.config.sys_ibatch == 0 and self.config.sys_iepoch == 0:
             # 检查Weight权重是否存在全为0的情况，pytorch有时在启动时
             _params = self.model_src.named_parameters()
@@ -355,7 +346,8 @@ class KkTrain(KkApp):
                     print("  >> KkTrain._optim <<  模型参数 {} 权重为 0 ，请确认该参数是否需要初始化。".format(ipname))
         self.optim.step()
         self.optim.zero_grad()
-        self._model_save(ibatch=ibatch, loss=loss, perc=perc, is_force=False)
+        self._model_save(ibatch=ibatch, loss=loss, is_force=False)
+        self.last_loss = loss
 
     def _layer_optim_init(self, model):
         cfg = self.config
@@ -534,9 +526,11 @@ class KkTrain(KkApp):
             _perc_sign = "(-" if _perc_diff > 0 else "(+"
             _perc_sign += str(abs(_perc_diff)) + "%)"
 
-        print("\n  >> 验证: RANK:{}/{}, epoch {}/{}, loss{} : {}, prec{} : {}%"
-              .format(self.config.rank, self.config.gpu_count, iepoch + 1, self.config.epoch,
-                      _loss_sign, val_loss, _perc_sign, val_perc))
+        print("\n  >> 验证信息: RANK:{}/{}, epoch {}/{} "
+               .format(self.config.rank, self.config.gpu_count, iepoch + 1, self.config.epoch))
+        print("      train_loss : {}, train_perc : {}%".format(self.last_loss[0], self.last_loss[1]))
+        print("      val_loss{} : {}, val_perc{} : {}%".format(_loss_sign, val_loss, _perc_sign, val_perc))
+
         self.val_loss = val_loss
         self.val_perc = val_perc
         return val_loss, val_perc
@@ -556,7 +550,7 @@ class KkTrain(KkApp):
         if hasattr(self.model, "after_loss"):
             self.model.after_loss(x=x, o=o, y=y, loss=loss)
         loss.backward()
-        return round(loss.item(), 0), _perc
+        return loss.item(), _perc
 
     def _epoch(self, iepoch: int):
         # self.optim.zero_grad()
@@ -568,8 +562,8 @@ class KkTrain(KkApp):
                 y = y.to(self.config.device)
                 self.config.sys_ibatch = ibatch
                 self._layer_optim(batch_epoch=True)
-                loss, perc = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
-                self._optim(ibatch=ibatch, loss=loss, perc=perc)
+                loss = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
+                self._optim(ibatch=ibatch, loss=loss)
         else:
             need_optim = False
             for ibatch, (x, y) in enumerate(self.dataLoader):
@@ -577,17 +571,16 @@ class KkTrain(KkApp):
                 y = y.to(self.config.device)
                 # 按层优化
                 self.config.sys_ibatch = ibatch
-                loss, perc = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
+                loss = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
                 # print("  >> Epoch {}/{}, batch {}/{}, rank:{}, loss:{}".format(iepoch, self.config.epoch,
                 #                                              ibatch, len(self.dataLoader), self.config.rank, loss))
                 need_optim = True
                 if ibatch % self.config.accumulation_steps == 0:
-                    self._optim(ibatch=ibatch, loss=loss, perc=perc)
+                    self._optim(ibatch=ibatch, loss=loss)
                     need_optim = False
 
             if need_optim:
-                self._optim(ibatch=ibatch, loss=loss, perc=perc)
-                need_optim = False
+                self._optim(ibatch=ibatch, loss=loss)
 
     def train(self):
         self.config.sys_init()
@@ -600,7 +593,7 @@ class KkTrain(KkApp):
                 print("\n  >> 开始训练 << epoch:{}, batch_size:{}, world_size:{}, gpu_count:{}, loss:{}, perc:{}"
                       .format(self.config.epoch, self.config.batch_size,
                               self.config.world_size, self.config.gpu_count,
-                              self.last_loss, self.last_perc))
+                              self.last_loss[0], self.last_loss[1]))
             for iepoch in tqdm.tqdm(range(self.config.epoch), desc='Epoch ', ncols=66):
                 # 训练
                 self.config.sys_iepoch = iepoch
@@ -620,8 +613,8 @@ class KkTrain(KkApp):
                 if isinstance(self.sampler_val, dist_data.DistributedSampler):
                     self.sampler_val.set_epoch(iepoch)
                 val_loss, val_perc = self._val(iepoch)
-                if val_perc > self.config.stop_train_perc:
-                    print("  >> KkTrain.train << 当前预测精度已满足系统要求，训练结束。")
+                if val_loss < self.config.stop_train_loss:
+                    print("  >> KkTrain.train << 当前预测精度已满足系统设计要求，训练结束。")
                     break
         finally:
             self._device_uninit()

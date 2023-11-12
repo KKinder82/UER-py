@@ -45,7 +45,7 @@ class KkmConfig(object):
         self.checkpoint_mode = "model"               # None: 不保存, dict: 参数文件, model : 模型与参数
         self.checkpoint_last = "model_last.pth"
         self.checkpoint_best = "model_best.pth"
-        self.stop_train_perc = 99.5                  # 此处为精度百分比值，如 99.5, 则为 99.5%
+        self.stop_train_loss = 0.005
         self.use_layer_optim = True                  # 是否启用分层优化,  加载 模型后，自动设备为 False
         self.use_layer_optim_random = False           # 选择选层优化，（顺序)
         self.use_layer_optim_from_zero = True       # True 从0层到 sys_parameters_locked_index 优化， False: 单层

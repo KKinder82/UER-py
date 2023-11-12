@@ -44,6 +44,8 @@ def main():
 
     a = (1, 2, "aaa")
     print(len(a))
+    print(a[0])
+    print(a[2])
     exit(0)
 
 
