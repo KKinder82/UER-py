@@ -31,7 +31,7 @@ class KkmConfig(object):
         self.gpu_count = min(torch.cuda.device_count(), self.world_size)
         # 数据集
         self.shuffle = False
-        self.batch_size = 10
+        self.batch_size = 1
         self.batch_count = 0
         self.num_workers = self.world_size
         self.pin_memory = False
@@ -62,6 +62,7 @@ class KkmConfig(object):
                                                    # layer_optim_times    : 当前锁定参数的层索引
                                                    # layer_optim_index    : 上次锁定层数
                                                    # layer_optim_finished : 优化结束标志
+        self.sys_param_check_loops = 0             # 网络参数检查 次数
 
         # 模型加载
         self.pt_load = True                     # 是否加载： True: 加载， False: 不加载
@@ -90,6 +91,12 @@ class KkmConfig(object):
         self.sys_iepoch = -1
         self.sys_training = False
         self.sys_layer_optim_models = {}
+
+        os.environ['RANK'] = str(self.rank)
+        os.environ['LOCAL_RANK'] = str(self.local_rank)
+        os.environ['WORLD_SIZE'] = str(self.world_size)
+        os.environ['MASTER_ADDR'] = self.master_addr
+        os.environ['MASTER_PORT'] = self.master_port
 
 
 # #################################  配置帮助  ##########################################
