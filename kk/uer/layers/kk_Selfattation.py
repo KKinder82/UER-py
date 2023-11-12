@@ -15,7 +15,7 @@ class KkSelfAttationItem(kkb.KkModule):
                  inner_feathers: int = 256, *, normalization: str = "none"):
         super(KkSelfAttationItem, self).__init__(config)
         self.inner_feathers = inner_feathers
-        self.QNet = kkl.KkLinear(config, qk_feathers, out_feathers)
+        self.QNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
         self.KNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
         self.VNet = kkl.KkLinear(config, v_feathers, out_feathers)
         self.softmax = nn.Softmax(-1)
