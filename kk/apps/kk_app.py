@@ -651,7 +651,7 @@ def torchrun():
     datas_val = torch.randn(100, 3)
     datas_val[:, 2] = datas_val[:, 0:2].sum(dim=1) / 3.1415926
     dataset_val = KkDataset(config, datas_val)
-    model = KkDemoModel(config)
+    model = KkDemoModel(in_feather=2)
     loss_fn = KkExtendLoss(config, lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
     trainer = KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
