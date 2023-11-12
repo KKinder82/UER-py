@@ -21,8 +21,8 @@ class KkSelfAttationItem(kkb.KkModule):
     def forward(self, q, k, v, *, postion_encoding: bool = False):
         if postion_encoding:
             pass
-        q = self.QNet(q)
-        o = self.Softmax(q)
+        o = self.QNet(q)
+        # o = self.Softmax(o)
         return o
 
 #
