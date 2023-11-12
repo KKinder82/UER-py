@@ -34,11 +34,11 @@ class KkSelfAttationItem(kkb.KkModule):
         o = o / math.sqrt(self.inner_feathers)
         o = self.Softmax(o)
         o = torch.matmul(o, v)
-        if self.Norm is None:
-            pass
-        else:
-            o = self.Norm(o)
-        return o
+        # if self.Norm is None:
+        #     pass
+        # else:
+        #     o = self.Norm(o)
+        # return o
 
 
 class KkSelfAttation(kkb.KkModule):
