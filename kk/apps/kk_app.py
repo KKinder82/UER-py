@@ -628,17 +628,17 @@ class KkTrain(KkApp):
                 val_loss, val_perc = self._val(iepoch)
                 if val_loss < self.config.stop_train_loss:
                     print("  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。".format(self.config.rank))
-                    if self.config.world_size > 1:
-                        dist.barrier()
-                        # 在训练结束时进行全局归约
-                        # if self.config.rank == 0:
-                        #     for param in self.model.parameters():
-                        #         dist.all_reduce(param.data, op=dist.reduce_op.SUM)
-                        #         param.data /= dist.get_world_size()
-                            # 强制保存
-                            # self._model_save(ibatch=ibatch, loss=loss, is_force=True)
-                        # 在分布式训练结束时进行同步
-                    return
+                    break
+            if self.config.world_size > 1:
+                dist.barrier()
+                # 在训练结束时进行全局归约
+                # if self.config.rank == 0:
+                #     for param in self.model.parameters():
+                #         dist.all_reduce(param.data, op=dist.reduce_op.SUM)
+                #         param.data /= dist.get_world_size()
+                # 强制保存
+                # self._model_save(ibatch=ibatch, loss=loss, is_force=True)
+                # 在分布式训练结束时进行同步
         finally:
             self._device_uninit()
 
