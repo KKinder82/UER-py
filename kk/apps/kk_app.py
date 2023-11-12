@@ -113,7 +113,8 @@ class KkApp(object):
                                         world_size=self.config.world_size, rank=self.config.rank)
                 torch.cuda.set_device(self.config.local_rank)
                 self.model_src = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
-                self.model = DDP(self.model_src, device_ids=[self.config.local_rank], )  # find_unused_parameters=True)
+                self.model = DDP(self.model_src,
+                                 device_ids=[self.config.local_rank], find_unused_parameters=True)
             else:
                 # 单机单卡 处理
                 print("  >> KkApp._device_init << Pytorch:GPU 单机单卡初始化 ")
