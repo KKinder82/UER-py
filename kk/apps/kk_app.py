@@ -589,35 +589,37 @@ class KkTrain(KkApp):
         self._device_init()
         self._data_init()
         self._layer_optim_init(self.model)
-        # 开始训练
-        if self.config.rank == 0:
-            print("\n  >> 开始训练 << epoch:{}, batch_size:{}, world_size:{}, gpu_count:{}, loss:{}, perc:{}"
-                  .format(self.config.epoch, self.config.batch_size,
-                          self.config.world_size, self.config.gpu_count,
-                          self.last_loss, self.last_perc))
-        for iepoch in tqdm.tqdm(range(self.config.epoch),  desc='Epoch ', ncols=66):
-            # 训练
-            self.config.sys_iepoch = iepoch
-            self.config.sys_ibatch = -1
-            self.config.sys_training = True    # 标记状态
-            self.model.train()
-            if isinstance(self.sampler, dist_data.DistributedSampler):
-                self.sampler.set_epoch(iepoch)
-            self._layer_optim(batch_epoch=False)
+        try
+            # 开始训练
+            if self.config.rank == 0:
+                print("\n  >> 开始训练 << epoch:{}, batch_size:{}, world_size:{}, gpu_count:{}, loss:{}, perc:{}"
+                      .format(self.config.epoch, self.config.batch_size,
+                              self.config.world_size, self.config.gpu_count,
+                              self.last_loss, self.last_perc))
+            for iepoch in tqdm.tqdm(range(self.config.epoch),  desc='Epoch ', ncols=66):
+                # 训练
+                self.config.sys_iepoch = iepoch
+                self.config.sys_ibatch = -1
+                self.config.sys_training = True    # 标记状态
+                self.model.train()
+                if isinstance(self.sampler, dist_data.DistributedSampler):
+                    self.sampler.set_epoch(iepoch)
+                self._layer_optim(batch_epoch=False)
 
-            # 进入 一个 epoch
-            self._epoch(iepoch)
+                # 进入 一个 epoch
+                self._epoch(iepoch)
 
-            # 进行验证
-            self.config.sys_training = False
-            self.model.eval()
-            if isinstance(self.sampler_val, dist_data.DistributedSampler):
-                self.sampler_val.set_epoch(iepoch)
-            val_loss, val_perc = self._val(iepoch)
-            if val_perc > self.config.stop_train_perc:
-                print("  >> KkTrain.train << 当前预测精度已满足系统要求，训练结束。")
-                break
-        self._device_uninit()
+                # 进行验证
+                self.config.sys_training = False
+                self.model.eval()
+                if isinstance(self.sampler_val, dist_data.DistributedSampler):
+                    self.sampler_val.set_epoch(iepoch)
+                val_loss, val_perc = self._val(iepoch)
+                if val_perc > self.config.stop_train_perc:
+                    print("  >> KkTrain.train << 当前预测精度已满足系统要求，训练结束。")
+                    break
+        finally:
+            self._device_uninit()
 
 
 class KkDemoModel(KkAppModel):
@@ -655,6 +657,7 @@ def torchrun():
     trainer = KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
                       loss_fn=loss_fn, optim=optim)
     trainer.train()
+
 
 def python_spawn():
     def _python_spawn_fn(rank: int, world_size: int):
