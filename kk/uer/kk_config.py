@@ -98,6 +98,13 @@ class KkmConfig(object):
         os.environ['MASTER_ADDR'] = self.master_addr
         os.environ['MASTER_PORT'] = self.master_port
 
+        print(os.environ['RANK'])
+        print(os.environ['LOCAL_RANK'])
+        print(os.environ['WORLD_SIZE'])
+        print(os.environ['MASTER_ADDR'])
+        print(os.environ['MASTER_PORT'])
+
+
 
 # #################################  配置帮助  ##########################################
 # 日志配置
