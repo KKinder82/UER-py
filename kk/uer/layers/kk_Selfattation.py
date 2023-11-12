@@ -18,7 +18,7 @@ class KkSelfAttationItem(kkb.KkModule):
         self.qnet = kkl.KkLinear(config, qk_feathers, inner_feathers)
         self.knet = kkl.KkLinear(config, qk_feathers, inner_feathers)
         self.vnet = kkl.KkLinear(config, v_feathers, out_feathers)
-        # self.softmax = nn.Softmax(-1)
+        self.softmax = nn.Softmax(-1)
 
     def forward(self, q, k, v, *, postion_encoding: bool = False):
         if postion_encoding:
@@ -28,7 +28,7 @@ class KkSelfAttationItem(kkb.KkModule):
         v = self.vnet(v)
         o = torch.matmul(q, k.transpose(-2, -1))
         o = o / math.sqrt(self.inner_feathers)
-        # o = self.softmax(o)
+        o = self.softmax(o)
         o = torch.matmul(o, v)
         return o
 
