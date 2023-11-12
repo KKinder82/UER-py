@@ -1,6 +1,10 @@
+import os
+import sys
+import ctypes
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.distributed as dist
 from torch.optim.lr_scheduler import LambdaLR
 import copy
 import argparse
@@ -12,7 +16,6 @@ import sentencepiece as spm
 import random
 import numpy as np
 import kk.kk_utils as kku
-import os
 
 
 # from finetune.run_c3 import MultipleChoice
@@ -38,6 +41,51 @@ def kk_gen():
 
 
 def main():
+
+    a = (1, 2, "aaa")
+    print(len(a))
+    exit(0)
+
+
+    class ModelT(nn.Module):
+        def __init__(self):
+            super(ModelT, self).__init__()
+            self.net = nn.Linear(10, 1)
+
+        def forward(self, x):
+            return self.net(x)
+
+    os.environ['RANK'] = "0"
+    os.environ['LOCAL_RANK'] = "0"
+    os.environ['WORLD_SIZE'] = "1"
+    os.environ['MASTER_ADDR'] = "127.0.0.1"
+    os.environ['MASTER_PORT'] = "16666"
+
+    dist.init_process_group(backend='gloo', init_method='env://')       # gloo
+    try:
+        model = ModelT()
+        model2 = model.to(0)
+        model1 = torch.nn.parallel.DistributedDataParallel(model, device_ids=[0], output_device=0)
+        print(id(model))
+        print(id(model1))
+        print(id(model2))
+        print(id(model1.module))
+    finally:
+        dist.destroy_process_group()
+    exit(0)
+
+
+
+
+    a = object()
+    b = object()
+    print(id(a))
+    print(id(b))
+    c = a
+    print(id(c))
+    exit(0)
+
+
     def aaa(*aaa):
         print(type(aaa))
 

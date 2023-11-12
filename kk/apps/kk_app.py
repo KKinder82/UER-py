@@ -76,7 +76,7 @@ class KkClassfierLoss(KkLoss):
         return loss, 0, prec.item()
 
 
-class KkExtendLoss(KkLoss):   # 回归损失
+class KkExtendLoss(KkLoss):  # 回归损失
     def __init__(self, config: kkc.KkmConfig, *, lossFn):
         super(KkExtendLoss, self).__init__(config)
         self.lossFn = lossFn
@@ -97,6 +97,7 @@ class KkApp(object):
         super(KkApp, self).__init__()
         self.config = config
         self.model_src = model
+        self._model_load()
         self.last_loss = None
         self.last_perc = None
 
@@ -108,13 +109,11 @@ class KkApp(object):
                 print("  >>> 分布式训练参数 <<<  MASTER_ADDR:{}, Master_PORT:{} ,world_size:{}, rank:{}, local_rank:{}"
                       .format(self.config.master_addr, self.config.master_port,
                               self.config.world_size, self.config.rank, self.config.local_rank))
-                torch.cuda.set_device(self.config.local_rank)
-                self.model_src = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
-                print(1)
                 dist.init_process_group(backend=self.config.backend, init_method="env://",
                                         world_size=self.config.world_size, rank=self.config.rank)
-                print(2)
-                self.model = DDP(self.model_src, device_ids=[self.config.local_rank])
+                torch.cuda.set_device(self.config.local_rank)
+                self.model = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
+                self.model = DDP(self.model, device_ids=[self.config.local_rank])
                 print("  >> KkApp._device_init << Pytorch:GPU 多机多卡初始化 [结束]")
             else:
                 # 单机单卡 处理
@@ -126,7 +125,7 @@ class KkApp(object):
         else:
             # cpu
             print("  >> KkApp._device_init << Pytorch:CPU 初始化 ")
-            self.model_src.to(self.config.device)
+            # self.model_src.to(self.config.device)
             self.model = self.model_src  # .to(self.config.device)
             print("  >> KkApp._device_init << Pytorch:CPU 初始化 【结束】 ")
 
@@ -147,31 +146,30 @@ class KkApp(object):
                 print("  >> KkmConfig << 加载模型参数文件：{} ... ".format(self.config.pt))
                 _load_obj = torch.load(self.config.pt)
                 if isinstance(_load_obj, tuple):
-                    if _load_obj[0] == "model":
-                        if isinstance(self.model, DDP):
-                            self.model.module = _load_obj[2]
+                    if len(_load_obj) == 3:
+                        if _load_obj[0] == "model":
+                            self.model_src = _load_obj[2]
+                            self.last_loss = _load_obj[1][0]
+                            self.last_perc = _load_obj[1][1]
+                            return True
+                        elif _load_obj[0] == "dict":
+                            self.self.model_src.load_state_dict(_load_obj[2])
+                            self.last_loss = _load_obj[1][0]
+                            self.last_perc = _load_obj[1][1]
+                            return True
                         else:
-                            self.model = _load_obj[2]
-                        self.last_loss = _load_obj[1][0]
-                        self.last_perc = _load_obj[1][1]
-                    elif _load_obj[0] == "dict":
-                        if isinstance(self.model, DDP):
-                            self.model.module.load_state_dict(_load_obj[2])
-                        else:
-                            self.model.load_state_dict(_load_obj[2])
-                        self.last_loss = _load_obj[1][0]
-                        self.last_perc = _load_obj[1][1]
+                            pass
                     else:
-                        raise Exception("  >> KkmConfig << KkmConfig.pt 参数文件错误。")
+                        pass
                 else:
-                    self.model_src = _load_obj
+                    pass
+                raise Exception("  >> KkmConfig << KkmConfig.pt 参数文件格式错误。")
 
     def _model_save(self, *, ibatch, loss, perc, is_force: bool = False):
         loss_tuple = (loss, perc)
+
         def _save(best_only: bool = False):
-            _model = self.model
-            if isinstance(_model, DDP):
-                _model = _model.module
+            _model = self.model_src
             if self.config.checkpoint_mode is None:
                 return
             elif self.config.checkpoint_mode == "model":
@@ -180,6 +178,7 @@ class KkApp(object):
                     torch.save(_save_obj, self.config.checkpoint_last)
                 if self.last_loss is None or self.last_loss > loss:
                     self.last_loss = loss
+                    self.last_perc = perc
                     torch.save(_save_obj, self.config.checkpoint_best)
                 _save_obj = None
             elif self.config.checkpoint_mode == "dict":
@@ -188,12 +187,13 @@ class KkApp(object):
                     torch.save(_save_obj, self.config.checkpoint_last)
                 if self.last_loss is None or self.last_loss > loss:
                     self.last_loss = loss
+                    self.last_perc = perc
                     torch.save(_save_obj, self.config.checkpoint_best)
                 _save_obj = None
             else:
-                print(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
+                raise Exception(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
 
-        if self.config.rank != 0:   # 只在 rank = 0 的进程中保存模型参数
+        if self.config.rank != 0:  # 只在 rank = 0 的进程中保存模型参数
             return
         if is_force:
             _save()
@@ -426,11 +426,11 @@ class KkTrain(KkApp):
             else:
                 m_cfg["layer_optim_index"] = (m_cfg["layer_optim_index"] + 1) % m_cfg["parameters_layers"]
                 if cfg.use_layer_optim_param_group_size < 1:
-                    layer_optim_param_group_size = random.randint(0, m_cfg["parameters_layers"]-1)
+                    layer_optim_param_group_size = random.randint(0, m_cfg["parameters_layers"] - 1)
                 else:
                     layer_optim_param_group_size = cfg.use_layer_optim_param_group_size
                 if cfg.use_layer_optim_random:
-                    _min = random.randint(0, m_cfg["parameters_layers"]-1)
+                    _min = random.randint(0, m_cfg["parameters_layers"] - 1)
                     _max = _min + layer_optim_param_group_size
                 else:
                     _min = cfg.use_layer_optim_param_group_size * m_cfg["layer_optim_index"]
@@ -535,7 +535,7 @@ class KkTrain(KkApp):
             _perc_sign += str(abs(_perc_diff)) + "%)"
 
         print("\n  >> 验证: RANK:{}/{}, epoch {}/{}, loss{} : {}, prec{} : {}%"
-              .format(self.config.rank,self.config.gpu_count,iepoch + 1, self.config.epoch,
+              .format(self.config.rank, self.config.gpu_count, iepoch + 1, self.config.epoch,
                       _loss_sign, val_loss, _perc_sign, val_perc))
         self.val_loss = val_loss
         self.val_perc = val_perc
@@ -592,7 +592,6 @@ class KkTrain(KkApp):
     def train(self):
         self.config.sys_init()
         self._device_init()
-        self._model_load()
         self._data_init()
         self._layer_optim_init(self.model)
         try:
@@ -602,11 +601,11 @@ class KkTrain(KkApp):
                       .format(self.config.epoch, self.config.batch_size,
                               self.config.world_size, self.config.gpu_count,
                               self.last_loss, self.last_perc))
-            for iepoch in tqdm.tqdm(range(self.config.epoch),  desc='Epoch ', ncols=66):
+            for iepoch in tqdm.tqdm(range(self.config.epoch), desc='Epoch ', ncols=66):
                 # 训练
                 self.config.sys_iepoch = iepoch
                 self.config.sys_ibatch = -1
-                self.config.sys_training = True    # 标记状态
+                self.config.sys_training = True  # 标记状态
                 self.model.train()
                 if isinstance(self.sampler, dist_data.DistributedSampler):
                     self.sampler.set_epoch(iepoch)
