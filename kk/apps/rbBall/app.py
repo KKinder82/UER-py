@@ -30,12 +30,6 @@ def prediction():
 
 
 def test():
-    os.environ['RANK'] = "0"
-    os.environ['LOCAL_RANK'] = "0"
-    os.environ['WORLD_SIZE'] = "1"
-    os.environ['MASTER_ADDR'] = "127.0.0.1"
-    os.environ['MASTER_PORT'] = "16666"
-
     _path = os.path.dirname(os.path.abspath(__file__))
     config = kkc.KkmConfig(_path)
     config.sys_init()
@@ -44,19 +38,16 @@ def test():
     # _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
     # dataset = kka.KkDataset(config, data=_data, x_len=88)
 
-    sampler = dist_data.DistributedSampler(dataset, rank=0,
-                                           num_replicas=1, shuffle=False)
-    dataLoader = data.DataLoader(dataset, batch_size=config.batch_size,
-                                 shuffle=False, sampler=sampler, num_workers=2,
-                                 pin_memory=config.pin_memory)
-    # for i, (x, y) in enumerate(dataLoader):
-    #     print(i, " : ", x.shape, y.shape)
+    dataset_val = kka.KkDataset(config, path_np="data/rbBall_val.npy", x_len=88)
+    # _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
+    # dataset = kka.KkDataset(config, data=_data, x_len=88)
+
 
     model = kka.KkDemoModel(config, in_feather=99)
     loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
-    trainer = kka.KkTrain(config, model=model, dataset=dataset, dataset_val=dataset,
-                      loss_fn=loss_fn, optim=optim)
+    trainer = kka.KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
+                          loss_fn=loss_fn, optim=optim)
     trainer.train()
 
 
