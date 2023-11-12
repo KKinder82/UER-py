@@ -596,7 +596,10 @@ class KkTrain(KkApp):
                 print("  >> 开始训练 << epoch : {}, batch_size : {}, world_size : {}, gpu_count:{},"
                       .format(self.config.epoch, self.config.batch_size,
                               self.config.world_size, self.config.gpu_count))
-                print("      loss : {0:<26}  |   perc : {1:<26}".format(self.last_loss[0], self.last_loss[1]))
+                _loss_sign = "(*)"
+                print("      loss : {0:<26}  |   perc : {1:<26}"
+                      .format(("None" if self.last_loss[0] is None else self.last_loss[0]),
+                              ("None" if self.last_loss[1] is None else self.last_loss[0])))
 
             for iepoch in range(self.config.epoch):
                 print("\n[ Epoch ] : {} / {}  |  rank : {}  |  gpu_count : {}".format(iepoch + 1, self.config.epoch,
