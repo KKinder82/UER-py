@@ -29,7 +29,7 @@ def test_simple():
     trainer.train()
 
 
-def test_transform():
+def test_selfattation():
     # 运行指令 torchrun --nperc-per-node 1 .\kk_app.py
     config = kkc.KkmConfig(__file__)
     feather_size = 11
@@ -53,5 +53,5 @@ def test_transform():
 
 
 if __name__ == "__main__":
-    test_transform()
+    test_selfattation()
 
