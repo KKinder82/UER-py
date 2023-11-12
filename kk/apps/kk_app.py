@@ -397,8 +397,10 @@ class KkTrain(KkApp):
         cfg = self.config
         model = self.model
         m_cfg = cfg.sys_layer_optim_models.get(model)
-        if ((not cfg.use_layer_optim)
-                or (batch_epoch != cfg.use_layer_optim_by_batch)):
+        if (cfg.use_layer_optim
+                and (batch_epoch == cfg.use_layer_optim_by_batch)):
+            pass
+        else:
             return
         if m_cfg["layer_optim_finished"]:
             self._layer_optim_finished(model)
