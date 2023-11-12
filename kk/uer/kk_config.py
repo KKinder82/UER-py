@@ -22,7 +22,8 @@ class KkmConfig(object):
         self.local_rank = kku.env_int('LOCAL_RANK', 0)       # int(os.environ['LOCAL_RANK'])
         self.world_size = kku.env_int('WORLD_SIZE', 1)       # int(os.environ['WORLD_SIZE'])
         self.master_addr = kku.env_value('MASTER_ADDR', "127.0.0.1")  # os.environ['MASTER_ADDR']
-        self.master_port = kku.env_value('MASTER_PORT', "16666")        # os.environ['MASTER_PORT']
+        # self.master_port = kku.env_value('MASTER_PORT', "16666")        # os.environ['MASTER_PORT']
+        self.master_port = "16666"  # os.environ['MASTER_PORT']
         print("  >>> 分布式训练参数 <<<  MASTER_ADDR:{}, Master_PORT:{} ,world_size:{}, rank:{}, local_rank:{}"
               .format(self.master_addr, self.master_port, self.world_size, self.rank, self.local_rank))
         self.backend = "nccl"
@@ -92,27 +93,11 @@ class KkmConfig(object):
         self.sys_training = False
         self.sys_layer_optim_models = {}
 
-        print("  >> KkmConfig.sys_init << " + "-"*100)
-
-        print(os.environ['RANK'])
-        print(os.environ['LOCAL_RANK'])
-        print(os.environ['WORLD_SIZE'])
-        print(os.environ['MASTER_ADDR'])
-        print(os.environ['MASTER_PORT'])
-
         os.environ['RANK'] = str(self.rank)
         os.environ['LOCAL_RANK'] = str(self.local_rank)
         os.environ['WORLD_SIZE'] = str(self.world_size)
         os.environ['MASTER_ADDR'] = self.master_addr
         os.environ['MASTER_PORT'] = self.master_port
-
-        print(os.environ['RANK'])
-        print(os.environ['LOCAL_RANK'])
-        print(os.environ['WORLD_SIZE'])
-        print(os.environ['MASTER_ADDR'])
-        print(os.environ['MASTER_PORT'])
-
-        print("  >> KkmConfig.sys_init 【END】 << " + "-" * 100)
 
 
 # #################################  配置帮助  ##########################################
