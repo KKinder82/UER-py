@@ -162,6 +162,10 @@ class KkApp(object):
                 raise Exception("  >> KkmConfig << KkmConfig.pt 参数文件格式错误。")
 
     def _model_save(self, *, ibatch, loss, is_force: bool = False):
+        if self.config.rank != 0:
+            # 只在 rank = 0 的进程保存模型参数
+            return False
+
         loss_tuple = loss
 
         def _save(best_only: bool = False):
@@ -185,8 +189,7 @@ class KkApp(object):
             else:
                 raise Exception(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
 
-        if self.config.rank != 0:  # 只在 rank = 0 的进程中保存模型参数
-            return
+
         if is_force:
             _save()
         else:
