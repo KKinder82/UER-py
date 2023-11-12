@@ -93,12 +93,6 @@ class KkmConfig(object):
         self.sys_training = False
         self.sys_layer_optim_models = {}
 
-        os.environ['RANK'] = str(self.rank)
-        os.environ['LOCAL_RANK'] = str(self.local_rank)
-        os.environ['WORLD_SIZE'] = str(self.world_size)
-        os.environ['MASTER_ADDR'] = self.master_addr
-        os.environ['MASTER_PORT'] = self.master_port
-
 # #################################  配置帮助  ##########################################
 # 日志配置
 # %(name)s        logger 名称, 即调用logging.getLogger函数传入的参数
