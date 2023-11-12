@@ -602,9 +602,8 @@ class KkTrain(KkApp):
                               ("None" if self.last_loss[1] is None else self.last_loss[0])))
 
             for iepoch in range(self.config.epoch):
-                print("\n[ Epoch ] : {} / {}  |  rank : {}  |  gpu_count : {}".format(iepoch + 1, self.config.epoch,
-                                                                                  self.config.rank,
-                                                                                  self.config.gpu_count))
+                print("\n|------ [ Epoch ] : {} / {}  |  rank : {}  |  gpu_count : {} -----------------------------"
+                      .format(iepoch + 1, self.config.epoch, self.config.rank, self.config.gpu_count))
                 # 训练
                 self.config.sys_iepoch = iepoch
                 self.config.sys_ibatch = -1
