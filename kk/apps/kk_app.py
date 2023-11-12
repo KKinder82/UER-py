@@ -589,7 +589,7 @@ class KkTrain(KkApp):
         self._device_init()
         self._data_init()
         self._layer_optim_init(self.model)
-        try
+        try:
             # 开始训练
             if self.config.rank == 0:
                 print("\n  >> 开始训练 << epoch:{}, batch_size:{}, world_size:{}, gpu_count:{}, loss:{}, perc:{}"
