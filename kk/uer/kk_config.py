@@ -92,6 +92,8 @@ class KkmConfig(object):
         self.sys_training = False
         self.sys_layer_optim_models = {}
 
+        print("  >> KkmConfig.sys_init << " + "-"*100)
+
         print(os.environ['RANK'])
         print(os.environ['LOCAL_RANK'])
         print(os.environ['WORLD_SIZE'])
@@ -110,6 +112,7 @@ class KkmConfig(object):
         print(os.environ['MASTER_ADDR'])
         print(os.environ['MASTER_PORT'])
 
+        print("  >> KkmConfig.sys_init 【END】 << " + "-" * 100)
 
 
 # #################################  配置帮助  ##########################################
