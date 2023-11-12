@@ -103,25 +103,31 @@ class KkApp(object):
 
     def _device_init(self):
         if self.config.device == "cuda":
-            if self.config.gpu_count > 1:
+            if self.config.world_size > 1:
                 # 单机多卡 处理
-                print("  >> KkApp._device_init << 多机多卡初始化 ")
+                print("  >> KkApp._device_init << Pytorch:GPU 多机多卡初始化 ")
                 dist.init_process_group(backend=self.config.backend, init_method="env://",
                                         world_size=self.config.world_size, rank=self.config.rank)
+                print(1)
                 torch.cuda.set_device(self.config.local_rank)
+                print(2)
                 self.model_src = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
                 self.model = DDP(self.model_src, device_ids=[self.config.local_rank])
-                print("  >> KkApp._device_init << 多机多卡初始化 [结束]")
+                print(3)
+                print("  >> KkApp._device_init << Pytorch:GPU 多机多卡初始化 [结束]")
             else:
                 # 单机单卡 处理
+                print("  >> KkApp._device_init << Pytorch:GPU 单机单卡初始化 ")
                 torch.cuda.set_device(self.config.local_rank)
                 self.model_src = self.model_src.to(self.config.device)
                 self.model = self.model_src
+                print("  >> KkApp._device_init << Pytorch:GPU 单机单卡初始化 【结束】")
         else:
             # cpu
+            print("  >> KkApp._device_init << Pytorch:CPU 初始化 ")
             self.model_src.to(self.config.device)
             self.model = self.model_src  # .to(self.config.device)
-            # self.lossFn.to(self.config.local_rank)
+            print("  >> KkApp._device_init << Pytorch:CPU 初始化 【结束】 ")
 
     def _device_uninit(self):
         if self.config.device == "cuda":
