@@ -150,7 +150,7 @@ class KkApp(object):
                             self.last_loss = _load_obj[1]
                             return True
                         elif _load_obj[0] == "dict":
-                            self.self.model_src.load_state_dict(_load_obj[2])
+                            self.model_src.load_state_dict(_load_obj[2])
                             self.last_loss = _load_obj[1]
                             return True
                         else:
@@ -528,8 +528,8 @@ class KkTrain(KkApp):
 
         print("\n  >> 验证信息: RANK:{}/{}, epoch {}/{} "
                .format(self.config.rank, self.config.gpu_count, iepoch + 1, self.config.epoch))
-        print("      train_loss : {}, train_perc : {}%".format(self.last_loss[0], self.last_loss[1]))
-        print("      val_loss{} : {}, val_perc{} : {}%".format(_loss_sign, val_loss, _perc_sign, val_perc))
+        print("      train_loss : {:<26} |  val_loss {:<22} : {}%".format(self.last_loss[0], _loss_sign, val_loss))
+        print("      train_perc : {:<26} |  val_perc {:<22} : {}%".format(self.last_loss[1], _perc_sign, val_perc))
 
         self.val_loss = val_loss
         self.val_perc = val_perc
@@ -590,11 +590,15 @@ class KkTrain(KkApp):
         try:
             # 开始训练
             if self.config.rank == 0:
-                print("\n  >> 开始训练 << epoch:{}, batch_size:{}, world_size:{}, gpu_count:{}, loss:{}, perc:{}"
+                print("  >> 开始训练 << epoch : {}, batch_size : {}, world_size : {}, gpu_count:{},"
                       .format(self.config.epoch, self.config.batch_size,
-                              self.config.world_size, self.config.gpu_count,
-                              self.last_loss[0], self.last_loss[1]))
-            for iepoch in tqdm.tqdm(range(self.config.epoch), desc='Epoch ', ncols=66):
+                              self.config.world_size, self.config.gpu_count))
+                print("      loss : {:<26}  |   perc : {:<26}".format(self.last_loss[0], self.last_loss[1]))
+
+            for iepoch in range(self.config.epoch):
+                print("\n[ Epoch ] : {} / {}  |  rank : {}  |  gpu_count : {}".format(iepoch + 1, self.config.epoch,
+                                                                                  self.config.rank,
+                                                                                  self.config.gpu_count))
                 # 训练
                 self.config.sys_iepoch = iepoch
                 self.config.sys_ibatch = -1

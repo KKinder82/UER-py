@@ -42,7 +42,7 @@ class KkmConfig(object):
         self.accumulation_steps = 1
         self.save_checkpoint_steps = 20
         self.report_steps = 1
-        self.checkpoint_mode = "model"               # None: 不保存, dict: 参数文件, model : 模型与参数
+        self.checkpoint_mode = "dict"               # None: 不保存, dict: 参数文件, model : 模型与参数
         self.checkpoint_last = "model_last.pth"
         self.checkpoint_best = "model_best.pth"
         self.stop_train_loss = 0.005
