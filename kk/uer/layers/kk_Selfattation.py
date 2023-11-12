@@ -15,28 +15,44 @@ class KkSelfAttationItem(kkb.KkModule):
                  inner_feathers: int = 256, *, normalization: str = "none"):
         super(KkSelfAttationItem, self).__init__(config)
         self.inner_feathers = inner_feathers
-        self.QNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
-        self.KNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
-        self.VNet = kkl.KkLinear(config, v_feathers, out_feathers)
+        self.QNet = kkl.KkLinear(config, qk_feathers, out_feathers)
         self.Softmax = nn.Softmax(-1)
-        # self.Norm = kkn.get_normalization(self.config, normalization)
-
 
     def forward(self, q, k, v, *, postion_encoding: bool = False):
         if postion_encoding:
             pass
         q = self.QNet(q)
-        k = self.KNet(k)
-        v = self.VNet(v)
-        o = torch.matmul(q, k.transpose(-2, -1))
-        o = o / math.sqrt(self.inner_feathers)
-        o = self.Softmax(o)
-        o = torch.matmul(o, v)
-        # if self.Norm is None:
-        #     pass
-        # else:
-        #     o = self.Norm(o)
+        o = self.Softmax(q)
         return o
+
+#
+# class KkSelfAttationItem(kkb.KkModule):
+#     def __init__(self, config: kkc.KkmConfig, qk_feathers: int, out_feathers: int, v_feathers: int,
+#                  inner_feathers: int = 256, *, normalization: str = "none"):
+#         super(KkSelfAttationItem, self).__init__(config)
+#         self.inner_feathers = inner_feathers
+#         self.QNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
+#         self.KNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
+#         self.VNet = kkl.KkLinear(config, v_feathers, out_feathers)
+#         self.Softmax = nn.Softmax(-1)
+#         # self.Norm = kkn.get_normalization(self.config, normalization)
+#
+#
+#     def forward(self, q, k, v, *, postion_encoding: bool = False):
+#         if postion_encoding:
+#             pass
+#         q = self.QNet(q)
+#         k = self.KNet(k)
+#         v = self.VNet(v)
+#         o = torch.matmul(q, k.transpose(-2, -1))
+#         o = o / math.sqrt(self.inner_feathers)
+#         o = self.Softmax(o)
+#         o = torch.matmul(o, v)
+#         # if self.Norm is None:
+#         #     pass
+#         # else:
+#         #     o = self.Norm(o)
+#         return o
 
 
 class KkSelfAttation(kkb.KkModule):
