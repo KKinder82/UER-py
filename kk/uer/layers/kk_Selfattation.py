@@ -16,7 +16,7 @@ class KkSelfAttationItem(kkb.KkModule):
         super(KkSelfAttationItem, self).__init__(config)
         self.inner_feathers = inner_feathers
         self.QNet = kkl.KkLinear(config, qk_feathers, out_feathers)
-        self.Softmax = nn.Softmax(-1)
+        # self.Softmax = nn.Softmax(-1)
 
     def forward(self, q, k, v, *, postion_encoding: bool = False):
         if postion_encoding:
