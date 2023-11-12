@@ -99,7 +99,6 @@ class KkApp(object):
         self.model_src = model
         self.last_loss = None
         self.last_perc = None
-        self._model_load()
 
     def _device_init(self):
         if self.config.device == "cuda":
@@ -149,11 +148,17 @@ class KkApp(object):
                 _load_obj = torch.load(self.config.pt)
                 if isinstance(_load_obj, tuple):
                     if _load_obj[0] == "model":
-                        self.model_src = _load_obj[2]
+                        if isinstance(self.model, DDP):
+                            self.model.module = _load_obj[2]
+                        else:
+                            self.model = _load_obj[2]
                         self.last_loss = _load_obj[1][0]
                         self.last_perc = _load_obj[1][1]
                     elif _load_obj[0] == "dict":
-                        self.model_src.load_state_dict(_load_obj[2])
+                        if isinstance(self.model, DDP):
+                            self.model.module.load_state_dict(_load_obj[2])
+                        else:
+                            self.model.load_state_dict(_load_obj[2])
                         self.last_loss = _load_obj[1][0]
                         self.last_perc = _load_obj[1][1]
                     else:
@@ -587,6 +592,7 @@ class KkTrain(KkApp):
     def train(self):
         self.config.sys_init()
         self._device_init()
+        self._model_load()
         self._data_init()
         self._layer_optim_init(self.model)
         try:
