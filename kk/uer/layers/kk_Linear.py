@@ -87,6 +87,7 @@ class KkLinear(kkb.KkModule):
         o = self.Linear(x)
         return o
 
+
 class KkFFNLayer(kkb.KkModule):
     def __init__(self, config: kkc.KkmConfig, in_feather: int, out_feathers: int, inner_feathers: int = 128):
         super(KkFFNLayer, self).__init__(config)

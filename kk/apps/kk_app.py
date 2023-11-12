@@ -620,48 +620,6 @@ class KkTrain(KkApp):
         self._device_uninit()
 
 
-def torchrun():
-    # 运行指令 torchrun --nperc-per-node 1 .\kk_app.py
-    config = kkc.KkmConfig(__file__)
-    datas = torch.randn(1000, 89)
-    # print(datas[:, 0:88].sum(dim=1) / 3.1415926)
-    datas[:, 88] = datas[:, 0:88].sum(dim=1) / 3.1415926
-    dataset = KkDataset(config, datas)
-    datas_val = torch.randn(80, 89)
-    datas_val[:, 88] = datas_val[:, 0:88].sum(dim=1) / 3.1415926
-    dataset_val = KkDataset(config, datas_val)
-    model = KkDemoModel(config)
-    loss_fn = KkExtendLoss(config, lossFn=nn.MSELoss())
-    optim = torch.optim.Adam(KkDemoModel(config).parameters(), lr=0.001)
-    trainer = KkTrain(config, model, dataset, dataset_val, loss_fn, optim)
-    trainer.train()
-
-
-def python_spawn_fn(rank: int, world_size: int):
-    os.environ['RANK'] = str(rank)
-    os.environ['LOCAL_RANK'] = str(rank)
-    os.environ['WORLD_SIZE'] = str(world_size)
-    os.environ['MASTER_ADDR'] = "127.0.0.1"
-    os.environ['MASTER_PORT'] = "16666"
-    torchrun()
-
-
-def python_spawn():
-    world_size = torch.cuda.device_count()
-    # python_spawn_fn 的第1个参数是rank，由mp.spawn 函数内容自动传入，范围为 0-（world_size-1）
-    mp.spawn(python_spawn_fn, args=(world_size,), nprocs=world_size)
-
-
-def python():
-    os.environ['RANK'] = "0"
-    os.environ['LOCAL_RANK'] = "0"
-    os.environ['WORLD_SIZE'] = "1"
-    os.environ['MASTER_ADDR'] = "127.0.0.1"
-    os.environ['MASTER_PORT'] = "16666"
-
-    torchrun()
-
-
 class KkDemoModel(KkAppModel):
     def __init__(self, config: kkc.KkmConfig, *, in_feather: int = 2):
         super(KkDemoModel, self).__init__(config)
@@ -681,49 +639,51 @@ class KkDemoModel(KkAppModel):
         pass
 
 
-def demo():
-    os.environ['RANK'] = "0"
-    os.environ['LOCAL_RANK'] = "0"
-    os.environ['WORLD_SIZE'] = "1"
-    os.environ['MASTER_ADDR'] = "127.0.0.1"
-    os.environ['MASTER_PORT'] = "16666"
-
+def torchrun():
+    # 运行指令 torchrun --nperc-per-node 1 .\kk_app.py
     config = kkc.KkmConfig(__file__)
-    config.batch_size = 2
-
-    _feather = 100
-    datas = torch.randn(10000, _feather)
-    datas[:, -1] = datas[:, 0:-1].sum() * 3.1415926 + random.randint(0, 6)
+    datas = torch.randn(1000, 3)
+    # print(datas[:, 0:88].sum(dim=1) / 3.1415926)
+    datas[:, 2] = datas[:, 0:2].sum(dim=1) / 3.1415926
     dataset = KkDataset(config, datas)
-    datas_val = torch.randn(100, _feather)
-    datas_val[:, -1] = datas_val[:, 0:-1].sum() * 3.1415926 + random.randint(0, 6)
+    datas_val = torch.randn(100, 3)
+    datas_val[:, 2] = datas_val[:, 0:2].sum(dim=1) / 3.1415926
     dataset_val = KkDataset(config, datas_val)
-    # dataset = TestDataset(config)
-    # dataset_val = TestDataset(config)
-    model = KkDemoModel(config, in_feather=99)
+    model = KkDemoModel(config)
     loss_fn = KkExtendLoss(config, lossFn=nn.MSELoss())
-    optim = torch.optim.Adam(model.parameters(), lr=0.001)
+    optim = torch.optim.Adam(KkDemoModel(config).parameters(), lr=0.001)
     trainer = KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
                       loss_fn=loss_fn, optim=optim)
     trainer.train()
+
+def python_spawn():
+    def _python_spawn_fn(rank: int, world_size: int):
+        os.environ['RANK'] = str(rank)
+        os.environ['LOCAL_RANK'] = str(rank)
+        os.environ['WORLD_SIZE'] = str(world_size)
+        os.environ['MASTER_ADDR'] = "127.0.0.1"
+        os.environ['MASTER_PORT'] = "16666"
+        torchrun()
+
+    world_size = torch.cuda.device_count()
+    # python_spawn_fn 的第1个参数是rank，由mp.spawn 函数内容自动传入，范围为 0-（world_size-1）
+    mp.spawn(_python_spawn_fn, args=(world_size,), nprocs=world_size)
+
+
+def python():
+    # os.environ['RANK'] = "0"
+    # os.environ['LOCAL_RANK'] = "0"
+    # os.environ['WORLD_SIZE'] = "1"
+    # os.environ['MASTER_ADDR'] = "127.0.0.1"
+    # os.environ['MASTER_PORT'] = "16666"
+
+    torchrun()
 
 
 if __name__ == "__main__":
     # 系统环境变量中 添加 "PYTHONPATH"， 指向项目
     # 在moudle 文件中 增加 __init__.py 文件
     # 端口也可能 影响 torchrun 的启动
-
-    demo()
-    # python()
+    python()
     # python_spawn()
     # torchrun()
-
-    # config = kkc.KkmConfig(__file__)
-    # loss = KkClassfierLoss(config, counts=1, lossFn=nn.BCELoss())
-    # o = torch.Tensor([[0.4, 0.5, 0.1], [0.1, 0.1, 0.1]]).to(torch.float32)
-    # y = torch.Tensor([[0, 1, 0], [0, 1, 0]]).to(torch.float32)
-    # l = nn.BCELoss()(o, y)
-    # print(l)
-    #
-    # l = loss(o, y)
-    # print(l)

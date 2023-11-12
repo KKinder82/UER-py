@@ -9,7 +9,7 @@ import time
 
 
 class KkmConfig(object):
-    def __init__(self, app_path: str, *args, **kwargs): # args:可变数量参数； kwargs：关键字参数（可变数量）
+    def __init__(self, app_path: str, *args, **kwargs):  # args:可变数量参数； kwargs：关键字参数（可变数量）
         log.basicConfig(level=log.INFO, format="%(created)f %(asctime)s %(levelname)s %(message)s \r\n", datefmt="%Y-%m-%d %H:%M:%S")
         # 应用配置
         self.app_name = "DLApp"
