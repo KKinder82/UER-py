@@ -42,7 +42,6 @@ def test():
     # _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
     # dataset = kka.KkDataset(config, data=_data, x_len=88)
 
-
     model = kka.KkDemoModel(config, in_feather=99)
     loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
