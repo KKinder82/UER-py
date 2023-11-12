@@ -344,7 +344,8 @@ class KkTrain(KkApp):
             # 检查Weight权重是否存在全为0的情况，pytorch有时在启动时
             _params = self.model_src.named_parameters()
             for ipname, iparam in _params:
-                # if ipname.endswith("weight") and torch.sum(iparam) > 0:
+                if ipname.endswith("mean") or ipname.endswith("bias"):
+                    continue
                 if not torch.nonzero(iparam).size(0) > 0:
                     print("  >> KkTrain._optim <<  模型参数 {} 权重为 0 ，请确认该参数是否需要初始化。".format(ipname))
         self.optim.step()

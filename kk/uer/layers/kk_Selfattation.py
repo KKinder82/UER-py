@@ -23,7 +23,7 @@ class KkSelfAttationItem(kkb.KkModule):
         self.Softmax = nn.Softmax(-1)
         self.Norm = kkn.get_normalization(self.config, normalization)
 
-    def forward(self, q, k, v, postion_encoding: bool = False):
+    def forward(self, q, k, v, *, postion_encoding: bool = False):
         if postion_encoding:
             pass
         q = self.QNet(q)
@@ -41,8 +41,8 @@ class KkSelfAttationItem(kkb.KkModule):
 
 
 class KkSelfAttation(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, qk_feathers: int, out_feathers: int, v_feathers: int = 0,
-                 inner_feathers: int = 256, loops: int = 6, *, normalization: str = "none"):
+    def __init__(self, config: kkc.KkmConfig, *, qk_feathers: int, out_feathers: int, v_feathers: int,
+                 inner_feathers: int = 256, loops: int = 6, normalization: str = "none"):
         super(KkSelfAttation, self).__init__(config)
         self.SA1 = KkSelfAttationItem(config, qk_feathers, inner_feathers, v_feathers, inner_feathers,
                                       normalization="layer")
