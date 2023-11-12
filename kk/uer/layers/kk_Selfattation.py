@@ -23,6 +23,7 @@ class KkSelfAttationItem(kkb.KkModule):
         self.Softmax = nn.Softmax(-1)
         self.Norm = kkn.get_normalization(self.config, normalization)
 
+
     def forward(self, q, k, v, *, postion_encoding: bool = False):
         if postion_encoding:
             pass
@@ -33,10 +34,10 @@ class KkSelfAttationItem(kkb.KkModule):
         o = o / math.sqrt(self.inner_feathers)
         o = self.Softmax(o)
         o = torch.matmul(o, v)
-        # if self.Norm is None:
-        #     pass
-        # else:
-        #     o = self.Norm(o)
+        if self.Norm is None:
+            pass
+        else:
+            o = self.Norm(o)
         return o
 
 
