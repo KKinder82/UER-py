@@ -93,13 +93,19 @@ class KkModule(nn.Module):
         # iepoch = args["iepoch"]
         pass
 
-
     def before_forward(self, **args):
         # x = args["x"]
         # o = args["o"]
         # y = args["y"]
-        # loss = args["y"]
+        # loss = args["loss"]
         # print("  >> --------------------- after_loss --------------------")
         # print(args["o"])
         # print(args["y"])
+        pass
+
+    def after_loss(self, **args):
+        # x = args["x"]
+        # o = args["o"]
+        # y = args["y"]
+        # loss = args["loss"]
         pass

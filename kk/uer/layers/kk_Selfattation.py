@@ -15,14 +15,14 @@ class KkSelfAttationItem(kkb.KkModule):
                  inner_feathers: int = 256, *, normalization: str = "none"):
         super(KkSelfAttationItem, self).__init__(config)
         self.inner_feathers = inner_feathers
-        self.QNet = kkl.KkLinear(config, qk_feathers, out_feathers)
-        # self.Softmax = nn.Softmax(-1)
+        self.q_net = kkl.KkLinear(config, qk_feathers, out_feathers)
+        self.softmax = nn.Softmax(-1)
 
     def forward(self, q, k, v, *, postion_encoding: bool = False):
         if postion_encoding:
             pass
-        o = self.QNet(q)
-        # o = self.Softmax(o)
+        o = self.q_net(q)
+        o = self.softmax(o)
         return o
 
 #
