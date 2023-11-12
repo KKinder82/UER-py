@@ -99,7 +99,6 @@ class KkmConfig(object):
         os.environ['MASTER_ADDR'] = self.master_addr
         os.environ['MASTER_PORT'] = self.master_port
 
-
 # #################################  配置帮助  ##########################################
 # 日志配置
 # %(name)s        logger 名称, 即调用logging.getLogger函数传入的参数
