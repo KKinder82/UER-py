@@ -11,17 +11,15 @@ import math
 
 
 class KkSelfAttationItem(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, qk_feathers: int, out_feathers: int, v_feathers: int = 0,
+    def __init__(self, config: kkc.KkmConfig, qk_feathers: int, out_feathers: int, v_feathers: int,
                  inner_feathers: int = 256, *, normalization: str = "none"):
         super(KkSelfAttationItem, self).__init__(config)
-        if v_feathers == 0:
-            v_feathers = qk_feathers
         self.inner_feathers = inner_feathers
         self.QNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
         self.KNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
         self.VNet = kkl.KkLinear(config, v_feathers, out_feathers)
         self.Softmax = nn.Softmax(-1)
-        self.Norm = kkn.get_normalization(self.config, normalization)
+        # self.Norm = kkn.get_normalization(self.config, normalization)
 
 
     def forward(self, q, k, v, *, postion_encoding: bool = False):
