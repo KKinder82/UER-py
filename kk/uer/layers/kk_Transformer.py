@@ -70,12 +70,9 @@ class KkTransformer(kkb.KkModule):
         self.decoder = KkTransformerDecode(config, in_feather,
                                            head_feathers=head_feathers, head_size=head_size, loops=loops)
 
-    def forward(self, context, x, last_o=None):
-        if last_o is None:
-            context = self.encoder(context)
-        else:
-            context = last_o
-        o = self.decoder(x, context)
+    def forward(self, context, x):
+        o_context = self.encoder(context)
+        o = self.decoder(x, o_context)
         return o
 
 
