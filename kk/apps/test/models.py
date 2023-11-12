@@ -29,8 +29,8 @@ class KkTestSelfAttationModel(kka.KkAppModel):
         self.net = kksa.KkSelfAttationItem(config, qk_feathers=in_feather, v_feathers=in_feather,
                                            out_feathers=in_feather)
         self.Linear = kkl.KkLinear(config, in_feather=in_feather, out_feather=1)
-        _context = torch.zeros(1, in_feather, dtype=torch.float32)
-        self.register_buffer("context", _context)
+        # _context = torch.zeros(1, in_feather, dtype=torch.float32)
+        # self.register_buffer("context", _context)
 
     def forward(self, x):
         o = self.net(x, x, x)
