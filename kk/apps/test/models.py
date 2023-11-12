@@ -26,6 +26,7 @@ class KkTestModel(kka.KkAppModel):
 class KkTestSelfAttationModel(kka.KkAppModel):
     def __init__(self, config: kkc.KkmConfig, *, in_feather: int = 10):
         super(KkTestSelfAttationModel, self).__init__(config)
+
         self.net = kksa.KkSelfAttationItem(config, qk_feathers=in_feather, v_feathers=in_feather,
                                            out_feathers=in_feather)
         self.Linear = kkl.KkLinear(config, in_feather=in_feather, out_feather=1)
@@ -35,18 +36,4 @@ class KkTestSelfAttationModel(kka.KkAppModel):
     def forward(self, x):
         o = self.net(x, x, x)
         o = self.Linear(o)
-        return o
-
-
-class KkTestTransformerModel(kka.KkAppModel):
-    def __init__(self, config: kkc.KkmConfig, *, in_feather: int = 10):
-        super(KkTestTransformerModel, self).__init__(config)
-        self.net = kkt.KkTransformer(config, in_feather=in_feather)
-        self.linear = kkl.KkLinear(config, in_feather=in_feather, out_feather=1)
-        _context = torch.zeros(1, in_feather, dtype=torch.float32)
-        self.register_buffer("context", _context)
-
-    def forward(self, x):
-        o = self.net(self.context, x)
-        o = self.linear(o)
         return o
