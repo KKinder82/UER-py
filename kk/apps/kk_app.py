@@ -106,14 +106,13 @@ class KkApp(object):
             if self.config.world_size > 1:
                 # 单机多卡 处理
                 print("  >> KkApp._device_init << Pytorch:GPU 多机多卡初始化 ")
-                dist.init_process_group(backend=self.config.backend, init_method="tcp://localhost:16667",
-                                        world_size=self.config.world_size, rank=self.config.rank)
-                print(1)
                 torch.cuda.set_device(self.config.local_rank)
-                print(2)
+                print(1)
                 self.model_src = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
                 self.model = DDP(self.model_src, device_ids=[self.config.local_rank])
-                print(3)
+                print(2)
+                dist.init_process_group(backend=self.config.backend, init_method="tcp://localhost:16667",
+                                        world_size=self.config.world_size, rank=self.config.rank)
                 print("  >> KkApp._device_init << Pytorch:GPU 多机多卡初始化 [结束]")
             else:
                 # 单机单卡 处理
