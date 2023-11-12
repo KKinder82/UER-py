@@ -15,14 +15,21 @@ class KkSelfAttationItem(kkb.KkModule):
                  inner_feathers: int = 256, *, normalization: str = "none"):
         super(KkSelfAttationItem, self).__init__(config)
         self.inner_feathers = inner_feathers
-        self.q_net = kkl.KkLinear(config, qk_feathers, out_feathers)
+        self.QNet = kkl.KkLinear(config, qk_feathers, out_feathers)
+        self.KNet = kkl.KkLinear(config, qk_feathers, inner_feathers)
+        self.VNet = kkl.KkLinear(config, v_feathers, out_feathers)
         self.softmax = nn.Softmax(-1)
 
     def forward(self, q, k, v, *, postion_encoding: bool = False):
         if postion_encoding:
             pass
-        o = self.q_net(q)
+        q = self.QNet(q)
+        k = self.KNet(k)
+        v = self.VNet(v)
+        o = torch.matmul(q, k.transpose(-2, -1))
+        o = o / math.sqrt(self.inner_feathers)
         o = self.softmax(o)
+        o = torch.matmul(o, v)
         return o
 
 #
