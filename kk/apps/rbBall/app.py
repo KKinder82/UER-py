@@ -37,12 +37,12 @@ def test():
 
 
     dataset = kka.KkDataset(config, path_np="data/rbBall_train.npy", x_len=88)
-    # _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
-    # dataset = kka.KkDataset(config, data=_data, x_len=88)
+    _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
+    dataset = kka.KkDataset(config, data=_data, x_len=88)
 
     dataset_val = kka.KkDataset(config, path_np="data/rbBall_val.npy", x_len=88)
-    # _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
-    # dataset = kka.KkDataset(config, data=_data, x_len=88)
+    _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
+    dataset_val = kka.KkDataset(config, data=_data, x_len=88)
 
     model = kka.KkDemoModel(config, in_feather=99)
     loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())

@@ -213,7 +213,6 @@ class KkInference(KkApp):
             for ibatch in range(batch):
                 x = datas[ibatch * self.config.batch_size:(ibatch + 1) * self.config.batch_size, :]
                 if self.config.device == "cuda":
-                    x = x.to(self.config.device)
                     o = self.model(x)
                     o = o.cpu()
                 else:
@@ -272,7 +271,6 @@ class KkDataset(data.Dataset):
 
     def __getitem__(self, index):
         _x = self.data[index]
-        _x.to(self.config.device)
         x = _x[..., 0:self.x_len]
         y = _x[..., self.x_len:]
         return x, y
@@ -546,8 +544,6 @@ class KkTrain(KkApp):
             return round(loss.item(), 2), _perc
 
     def _batch(self, *, iepoch, ibatch, x, y):
-        x = x.to(self.config.device)
-        y = y.to(self.config.device)
         if hasattr(self.model, "before_forward"):
             self.model.before_forward(x=x, y=y)
         o = self.model(x)
@@ -563,6 +559,8 @@ class KkTrain(KkApp):
             self.model_src.epoch_reset(iepoch=iepoch)
         if self.config.use_layer_optim and self.config.use_layer_optim_by_batch:
             for ibatch, (x, y) in enumerate(self.dataLoader):
+                x = x.to(self.config.device)
+                y = y.to(self.config.device)
                 self.config.sys_ibatch = ibatch
                 self._layer_optim(batch_epoch=True)
                 loss, perc = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
@@ -570,6 +568,8 @@ class KkTrain(KkApp):
         else:
             need_optim = False
             for ibatch, (x, y) in enumerate(self.dataLoader):
+                x = x.to(self.config.device)
+                y = y.to(self.config.device)
                 # 按层优化
                 self.config.sys_ibatch = ibatch
                 loss, perc = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
