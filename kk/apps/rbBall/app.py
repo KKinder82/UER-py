@@ -52,8 +52,8 @@ def test():
 
 
 if __name__ == "__main__":
-    print(kku.env_int('RANK', 0))
-    print(kku.env_int('LOCAL_RANK', 0))
+    print("RANK", kku.env_int('RANK', 0))
+    print("LOCAL_RANK", kku.env_int('LOCAL_RANK', 0))
     # os.environ['RANK'] = "0"
     # os.environ['LOCAL_RANK'] = "0"
     # os.environ['WORLD_SIZE'] = "2"

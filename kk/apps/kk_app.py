@@ -108,7 +108,7 @@ class KkApp(object):
                 print("  >> KkApp._device_init << Pytorch:GPU 多机多卡初始化 ")
                 print("  >>> 分布式训练参数 <<<  MASTER_ADDR:{}, Master_PORT:{} ,world_size:{}, rank:{}, local_rank:{}"
                       .format(self.config.master_addr, self.config.master_port,
-                              self.config.world_size, self.rank, self.local_rank))
+                              self.config.world_size, self.config.rank, self.config.local_rank))
                 torch.cuda.set_device(self.config.local_rank)
                 self.model_src = self.model_src.to(self.config.local_rank)  # 先将模放到GPU
                 print(1)
