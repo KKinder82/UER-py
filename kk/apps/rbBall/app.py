@@ -44,7 +44,7 @@ def test():
     # _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
     # dataset_val = kka.KkDataset(config, data=_data, x_len=88)
 
-    model = kka.KkDemoModel(config, in_feather=99)
+    model = models.RBModel(config)
     loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
     trainer = kka.KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
@@ -53,12 +53,4 @@ def test():
 
 
 if __name__ == "__main__":
-    print("RANK", kku.env_int('RANK', 0))
-    print("LOCAL_RANK", kku.env_int('LOCAL_RANK', 0))
-    # os.environ['RANK'] = "0"
-    # os.environ['LOCAL_RANK'] = "0"
-    # os.environ['WORLD_SIZE'] = "2"
-    # os.environ['MASTER_ADDR'] = "127.0.0.1"
-    # os.environ['MASTER_PORT'] = "16666"
-
     test()
