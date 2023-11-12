@@ -589,17 +589,6 @@ class KkTrain(KkApp):
             if need_optim:
                 self._optim(ibatch=ibatch, loss=loss)
 
-            if self.config.world_size > 1:
-                # 在分布式训练结束时进行同步
-                dist.barrier()
-                # 在训练结束时进行全局归约
-                # if self.config.rank == 0:
-                #     for param in self.model.parameters():
-                #         dist.all_reduce(param.data, op=dist.reduce_op.SUM)
-                #         param.data /= dist.get_world_size()
-                #     # 强制保存
-                #     self._model_save(ibatch=ibatch, loss=loss, is_force=True)
-
     def train(self):
         self.config.sys_init()
         self._device_init()
@@ -630,6 +619,16 @@ class KkTrain(KkApp):
 
                 # 进入 一个 epoch
                 self._epoch(iepoch)
+                if self.config.world_size > 1:
+                    # 在训练结束时进行全局归约
+                    if self.config.rank == 0:
+                        for param in self.model.parameters():
+                            dist.all_reduce(param.data, op=dist.reduce_op.SUM)
+                            param.data /= dist.get_world_size()
+                        # 强制保存
+                        # self._model_save(ibatch=ibatch, loss=loss, is_force=True)
+                    # 在分布式训练结束时进行同步
+                    dist.barrier()
 
                 # 进行验证
                 self.config.sys_training = False
