@@ -25,7 +25,7 @@ def test_simple():
     loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
     trainer = kka.KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
-                      loss_fn=loss_fn, optim=optim)
+                          loss_fn=loss_fn, optim=optim)
     trainer.train()
 
 
