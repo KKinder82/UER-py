@@ -31,6 +31,8 @@ def prediction():
 def test():
     _path = os.path.dirname(os.path.abspath(__file__))
     config = kkc.KkmConfig(_path)
+    config.sys_init()
+
     dataset = kka.KkDataset(config, path_np="data/rbBall_train.npy", x_len=88)
 
     sampler = dist_data.DistributedSampler(dataset, rank=0,
@@ -44,4 +46,4 @@ def test():
 
 
 if __name__ == "__main__":
-    train()
+    test()
