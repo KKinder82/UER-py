@@ -22,8 +22,8 @@ class KkmConfig(object):
         self.local_rank = kku.env_int('LOCAL_RANK', 0)       # int(os.environ['LOCAL_RANK'])
         self.world_size = kku.env_int('WORLD_SIZE', 1)       # int(os.environ['WORLD_SIZE'])
         self.master_addr = kku.env_value('MASTER_ADDR', "127.0.0.1")  # os.environ['MASTER_ADDR']
-        # self.master_port = kku.env_value('MASTER_PORT', "16666")        # os.environ['MASTER_PORT']
-        self.master_port = os.environ['MASTER_PORT']
+        self.master_port = kku.env_value('MASTER_PORT', "16666")        # os.environ['MASTER_PORT']
+        self.master_port = "16666"
         self.backend = "nccl"
         # GPU 训练
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
