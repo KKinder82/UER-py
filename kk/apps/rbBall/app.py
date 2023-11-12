@@ -51,4 +51,10 @@ def test():
 
 
 if __name__ == "__main__":
+    os.environ['RANK'] = "0"
+    os.environ['LOCAL_RANK'] = "0"
+    os.environ['WORLD_SIZE'] = "1"
+    os.environ['MASTER_ADDR'] = "127.0.0.1"
+    os.environ['MASTER_PORT'] = "16666"
+
     test()
