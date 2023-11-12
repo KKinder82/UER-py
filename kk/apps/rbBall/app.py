@@ -40,9 +40,9 @@ def test():
     config = kkc.KkmConfig(_path)
     config.sys_init()
 
-    # dataset = kka.KkDataset(config, path_np="data/rbBall_train.npy", x_len=88)
-    _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
-    dataset = kka.KkDataset(config, data=_data, x_len=88)
+    dataset = kka.KkDataset(config, path_np="data/rbBall_train.npy", x_len=88)
+    # _data = torch.arange(10 * (88+49)).reshape(10, 88+49).float()
+    # dataset = kka.KkDataset(config, data=_data, x_len=88)
 
     sampler = dist_data.DistributedSampler(dataset, rank=0,
                                            num_replicas=1, shuffle=False)
