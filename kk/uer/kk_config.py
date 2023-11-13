@@ -45,7 +45,7 @@ class KkmConfig(object):
         self.sys_ibatch = 0
         self.epoch = 10000
         self.accumulation_steps = 1
-        self.save_checkpoint_steps = 20
+        self.save_checkpoint_steps = 1
         self.report_steps = 1
         self.checkpoint_mode = "dict"               # None: 不保存, dict: 参数文件, model : 模型与参数
         self.checkpoint_last = "model_last.pth"
