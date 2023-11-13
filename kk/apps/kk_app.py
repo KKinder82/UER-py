@@ -657,10 +657,9 @@ class KkTrain(KkApp):
                                   .format(config.rank))
                             _status.data = 1
                         _scatter_list = [_status for _ in range(config.world_size)]
-                        _scatter_list = _scatter_list.to(config.device)
                     else:
                         _scatter_list = None
-                    out_tensor = torch.tensor(0, dtype=torch.int32, device=config.device)
+                    out_tensor = torch.tensor(0, dtype=torch.int32)
                     dist.scatter(out_tensor, _scatter_list, src=0)
                     print("\n\n  >> KkTrain.train << Rank {} : dist.scatter OUT : {}"
                           .format(config.rank, out_tensor))
