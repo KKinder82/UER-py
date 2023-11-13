@@ -93,9 +93,11 @@ class KkExtendLoss(KkLoss):  # 回归损失
 
 
 class KkApp(object):
+    config = None
+
     def __init__(self, config: kkc.KkmConfig, model):
         super(KkApp, self).__init__()
-        self.config = config
+        KkApp.config = config
         self.model_src = model
         self.last_loss = (None, None)
         # 加载参数文件
@@ -310,6 +312,7 @@ class KkTrain(KkApp):
                  model: kkb.KkModule, dataset: KkDataset, dataset_val: KkDataset,
                  loss_fn, optim=None):
         super(KkTrain, self).__init__(config, model)
+        kkb.KkModule.model = model
         self.loss_value = 0.0
         self.gpu_count = config.gpu_count
         self.dataset = dataset

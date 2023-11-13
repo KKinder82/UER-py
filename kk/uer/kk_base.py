@@ -57,7 +57,6 @@ def init_weights(config: kkc.KkmConfig, model, *, mean=0.0, std: (str, float) = 
         pass
 
 
-
 def get_randn_parameter(*shape, mean=0.0, std: (str, float) = 0.01):
     if isinstance(std, str):
         if std == "kk":
@@ -85,9 +84,11 @@ def get_constant_parameter(*shape, value: int = 1):
 
 
 class KkModule(nn.Module):
+    config: kkc.KkmConfig
+
     def __init__(self, config: kkc.KkmConfig):
         super(KkModule, self).__init__()
-        self.config = config
+        # self.config = config
 
     def epoch_reset(self, **args):
         # iepoch = args["iepoch"]
