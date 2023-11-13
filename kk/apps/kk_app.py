@@ -655,7 +655,7 @@ class KkTrain(KkApp):
                         if val_loss[0] < config.stop_train_loss:
                             print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
                                   .format(config.rank))
-                            _status = 1
+                            _status.data = 1
                         _scatter_list = [_status for _ in range(config.world_size)]
                     else:
                         _scatter_list = None
