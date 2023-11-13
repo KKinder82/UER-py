@@ -164,7 +164,7 @@ class KkApp(object):
                     pass
                 raise Exception("  >> KkmConfig << KkmConfig.pt 参数文件格式错误。")
 
-    def _model_save(self, *, ibatch, loss, is_force: bool = False):
+    def _model_save(self, *, iepoch, loss, is_force: bool = False):
         config = kkc.KkmConfig.config
         if config.rank != 0:
             # 只在 rank = 0 的进程保存模型参数
@@ -172,7 +172,7 @@ class KkApp(object):
 
         loss_tuple = loss
 
-        def _save(best_only: bool = False):
+        def _save(best_only: bool=False):
             _model = self.model_src
             if config.checkpoint_mode is None:
                 return
@@ -182,6 +182,7 @@ class KkApp(object):
                     torch.save(_save_obj, config.checkpoint_last)
                 if self.last_loss[0] is None or self.last_loss[0] > loss_tuple[0]:
                     torch.save(_save_obj, config.checkpoint_best)
+                    self.last_loss = loss_tuple
                 _save_obj = None
             elif config.checkpoint_mode == "dict":
                 _save_obj = (config.checkpoint_mode, loss_tuple, _model.state_dict())
@@ -189,15 +190,15 @@ class KkApp(object):
                     torch.save(_save_obj, config.checkpoint_last)
                 if self.last_loss[0] is None or self.last_loss[0] > loss_tuple[0]:
                     torch.save(_save_obj, config.checkpoint_best)
+                    self.last_loss = loss_tuple
                 _save_obj = None
             else:
                 raise Exception(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
 
-
         if is_force:
             _save()
         else:
-            if ibatch % config.save_checkpoint_steps == 0:
+            if iepoch % config.save_checkpoint_steps == 0:
                 _save()
             else:
                 _save(True)
@@ -356,8 +357,6 @@ class KkTrain(KkApp):
                     print("  >> KkTrain._optim <<  模型参数 {} 权重为 0 ，请确认该参数是否需要初始化。".format(ipname))
         self.optim.step()
         self.optim.zero_grad()
-        self._model_save(ibatch=ibatch, loss=loss, is_force=False)
-        self.last_loss = loss
 
     def _layer_optim_init(self, model):
         config = kkc.KkmConfig.config
@@ -542,8 +541,10 @@ class KkTrain(KkApp):
 
         print("\n  >> 验证信息: RANK:{}/{}, epoch {}/{} "
                .format(config.rank, config.gpu_count, iepoch + 1, config.epoch))
-        print("      train_loss : {:>26} |  val_loss {:<22} : {}".format(self.last_loss[0], _loss_sign, val_loss))
-        print("      train_perc : {:>25}% |  val_perc {:<22} : {}%".format(self.last_loss[1], _perc_sign, val_perc))
+        print("        val_loss {:<22} : {}"
+              .format(_loss_sign, val_loss))
+        print("        val_perc {:<22} : {}%"
+              .format(_perc_sign, val_perc))
 
         self.val_loss = val_loss
         self.val_perc = val_perc
@@ -610,9 +611,9 @@ class KkTrain(KkApp):
                       .format(config.epoch, config.batch_size,
                               config.world_size, config.gpu_count))
                 _loss_sign = "(*)"
-                print("      loss : {0:<26}  |   perc : {1:<26}"
-                      .format(("None" if self.last_loss[0] is None else self.last_loss[0]),
-                              ("None" if self.last_loss[1] is None else self.last_loss[0])))
+                print("          loss : {0:<26}  |   perc : {1:<26}"
+                      .format(("(*)" if self.last_loss[0] is None else self.last_loss[0]),
+                              ("(*)" if self.last_loss[1] is None else self.last_loss[1])))
 
             for iepoch in range(config.epoch):
                 print("\n|------ [ Epoch ] : {} / {}  |  rank : {}  |  world_size : {} -----------------------------"
@@ -629,29 +630,43 @@ class KkTrain(KkApp):
                 # 进入 一个 epoch
                 self._epoch(iepoch)
 
-                # 进行验证
-                config.sys_training = False
-                self.model.eval()
-                if isinstance(self.sampler_val, dist_data.DistributedSampler):
-                    self.sampler_val.set_epoch(iepoch)
-                val_loss, val_perc = self._val(iepoch)
+                if config.world_size <= 1:
+                    # 进行验证
+                    config.sys_training = False
+                    self.model.eval()
+                    if isinstance(self.sampler_val, dist_data.DistributedSampler):
+                        self.sampler_val.set_epoch(iepoch)
+                    val_loss = self._val(iepoch)
+                    self._model_save(iepoch=iepoch, loss=val_loss)
+                    if val_loss[0] < config.stop_train_loss:
+                        print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
+                              .format(config.rank))
+                        return
+                else:
+                    dist.barrier()
+                    if config.rank == 0:
+                        # 一个epoch 结束 进行全局归约
+                        for param in self.model.parameters():
+                            dist.all_reduce(param.data, op=dist.reduce_op.SUM)
+                            param.data /= dist.get_world_size()
 
-                if val_loss < config.stop_train_loss:
-                    print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。".format(config.rank))
-                    break
-            # if config.world_size > 1:
-                # dist.barrier()
-                # 在训练结束时进行全局归约
-                # if config.rank == 0:
-                #     for param in self.model.parameters():
-                #         dist.all_reduce(param.data, op=dist.reduce_op.SUM)
-                #         param.data /= dist.get_world_size()
-                # 强制保存
-                # self._model_save(ibatch=ibatch, loss=loss, is_force=True)
-                # 在分布式训练结束时进行同步
+                        # 进行验证
+                        config.sys_training = False
+                        self.model.eval()
+                        if isinstance(self.sampler_val, dist_data.DistributedSampler):
+                            self.sampler_val.set_epoch(iepoch)
+                        val_loss = self._val(iepoch)
+                        self._model_save(iepoch=iepoch, loss=val_loss)
+                        if val_loss[0] < config.stop_train_loss:
+                            print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
+                                  .format(config.rank))
+                            self._device_uninit()
+                            dist.barrier()
+                            return
+                    else:
+                        dist.barrier()
         finally:
             self._device_uninit()
-
 
 class KkDemoModel(kkb.KkModule):
     def __init__(self, *, in_feather: int = 2):

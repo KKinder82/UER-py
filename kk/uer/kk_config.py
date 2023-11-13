@@ -51,6 +51,7 @@ class KkmConfig(object):
         self.checkpoint_last = "model_last.pth"
         self.checkpoint_best = "model_best.pth"
         self.stop_train_loss = 0.005
+        self.sys_stop_train = False
         self.use_layer_optim = False                # 是否启用分层优化,  加载 模型后，自动设备为 False
         self.use_layer_optim_random = False         # 选择选层优化，（顺序)
         self.use_layer_optim_from_zero = True       # True 从0层到 sys_parameters_locked_index 优化， False: 单层
@@ -97,6 +98,7 @@ class KkmConfig(object):
         self.sys_iepoch = -1
         self.sys_training = False
         self.sys_layer_optim_models = {}
+        self.sys_stop_train
 
 # #################################  配置帮助  ##########################################
 # 日志配置
