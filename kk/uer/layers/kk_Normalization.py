@@ -4,23 +4,23 @@ import kk.uer.kk_base as kkb
 import kk.uer.kk_config as kkc
 
 
-def get_normalization(config: kkc.KkmConfig, normalization: str, groups: int = 2):
+def get_normalization(normalization: str, groups: int = 2):
     if normalization == "batch":
-        return KkBatchNormal(config)
+        return KkBatchNormal()
     elif normalization == "layer":
-        return KkLayerNormal(config)
+        return KkLayerNormal()
     elif normalization == "instance":
-        return KkInstanceNormal(config)
+        return KkInstanceNormal()
     elif normalization == "group":
-        return KkGroupNormal(config, groups)
+        return KkGroupNormal(groups)
     else:
         return None
 
 
 class KkNormalization(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, *,
+    def __init__(self, *,
                  mean: float = 0, std: float = 1, eps: float = 1e-5, adapt: bool = True):
-        super(KkNormalization, self).__init__(config)
+        super(KkNormalization, self).__init__()
         self.eps = eps
         if adapt:
             self.normalization_mean = nn.Parameter(torch.tensor(mean, dtype=torch.float32))
@@ -39,8 +39,8 @@ class KkNormalization(kkb.KkModule):
 
 
 class KkBatchNormal(KkNormalization):
-    def __init__(self, config: kkc.KkmConfig, *, eps: float = 1e-5):
-        super(KkBatchNormal, self).__init__(config, eps=eps)
+    def __init__(self, *, eps: float = 1e-5):
+        super(KkBatchNormal, self).__init__(eps=eps)
 
     # 批次, 通道, 数据
     def forward(self, x):
@@ -52,8 +52,8 @@ class KkBatchNormal(KkNormalization):
 
 
 class KkLayerNormal(KkNormalization):
-    def __init__(self, config: kkc.KkmConfig, *, eps: float = 1e-5):
-        super(KkLayerNormal, self).__init__(config, eps=eps)
+    def __init__(self, *, eps: float = 1e-5):
+        super(KkLayerNormal, self).__init__(eps=eps)
 
     # 批次, 通道, 数据
     def forward(self, x):
@@ -64,8 +64,8 @@ class KkLayerNormal(KkNormalization):
 
 
 class KkInstanceNormal(KkNormalization):
-    def __init__(self, config: kkc.KkmConfig, *, eps: float = 1e-5):
-        super(KkInstanceNormal, self).__init__(config, eps=eps)
+    def __init__(self, *, eps: float = 1e-5):
+        super(KkInstanceNormal, self).__init__(eps=eps)
 
     # 批次, 通道, 数据
     def forward(self, x):
@@ -76,8 +76,8 @@ class KkInstanceNormal(KkNormalization):
 
 
 class KkGroupNormal(KkNormalization):
-    def __init__(self, config: kkc.KkmConfig, groups: int = 2, *, eps: float = 1e-5):
-        super(KkGroupNormal, self).__init__(config, eps=eps)
+    def __init__(self, groups: int = 2, *, eps: float = 1e-5):
+        super(KkGroupNormal, self).__init__(eps=eps)
         self.groups = groups
 
     # 批次, 通道, 数据

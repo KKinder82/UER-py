@@ -52,10 +52,12 @@ class MyLinear(torch.nn.Module):
         out = self.linear2(out)
         return out
 
+
 def plot(x, y, predict):
     plt.scatter(x, y, c='r')
     plt.plot(x, predict, color='g', label='预测值')
     plt.show()
+
 
 def main():
     data = torch.arange(0, 30).view(-1, 3).float()
@@ -78,6 +80,7 @@ def main():
         optim.zero_grad()
         if i % 50 == 0:
             plot(x.detach().numpy(), y.detach().numpy(), out.detach().numpy())
+
 
 def print_model(model):
     for i in model.parameters():

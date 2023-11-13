@@ -17,14 +17,14 @@ def test_simple():
     datas = torch.randn(1000, 3)
     # print(datas[:, 0:88].sum(dim=1) / 3.1415926)
     datas[:, 2] = datas[:, 0:2].sum(dim=1) / 3.1415926
-    dataset = kka.KkDataset(config, datas)
+    dataset = kka.KkDataset(datas)
     datas_val = torch.randn(100, 3)
     datas_val[:, 2] = datas_val[:, 0:2].sum(dim=1) / 3.1415926
-    dataset_val = kka.KkDataset(config, datas_val)
-    model = models.KkTestModel(config)
-    loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())
+    dataset_val = kka.KkDataset(datas_val)
+    model = models.KkTestModel()
+    loss_fn = kka.KkExtendLoss(lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
-    trainer = kka.KkTrain(config, model=model, dataset=dataset, dataset_val=dataset_val,
+    trainer = kka.KkTrain(model=model, dataset=dataset, dataset_val=dataset_val,
                           loss_fn=loss_fn, optim=optim)
     trainer.train()
 
@@ -36,22 +36,22 @@ def test_selfattation():
 
     datas = torch.randn(10, feather_size)
     datas[:, feather_size-1] = datas[:, 0:feather_size-2].sum(dim=1) / 3.1415926
-    dataset = kka.KkDataset(config, datas)
+    dataset = kka.KkDataset(datas)
 
     datas_val = torch.randn(2, feather_size)
     datas_val[:, feather_size-1] = datas_val[:, 0:feather_size-2].sum(dim=1) / 3.1415926
-    dataset_val = kka.KkDataset(config, datas_val)
+    dataset_val = kka.KkDataset(datas_val)
 
-    model = models.KkTestSelfAttationModel(config)
-    loss_fn = kka.KkExtendLoss(config, lossFn=nn.MSELoss())
+    model = models.KkTestSelfAttationModel()
+    loss_fn = kka.KkExtendLoss(lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    trainer = kka.KkTrain(config, model=model,
+    trainer = kka.KkTrain(model=model,
                           dataset=dataset, dataset_val=dataset_val,
                           loss_fn=loss_fn, optim=optim)
     trainer.train()
 
 
 if __name__ == "__main__":
-    test_selfattation()
+    test_simple()
 

@@ -26,11 +26,11 @@ if __name__ == "__main__":
     config.batch_size = 1
 
     # config.batch_size =
-    model = models.NumInferModel(config)
-    dataset = kka.KkDataset(config, path_np="data/numInfer_train.npy", x_len=4)
-    dataset_val = kka.KkDataset(config, path_np="data/numInfer_val.npy", x_len=4)
-    loss_fun = kka.KkClassfierLoss(config, lossFn=nn.BCELoss())
+    model = models.NumInferModel()
+    dataset = kka.KkDataset(path_np="data/numInfer_train.npy", x_len=4)
+    dataset_val = kka.KkDataset(path_np="data/numInfer_val.npy", x_len=4)
+    loss_fun = kka.KkClassfierLoss(lossFn=nn.BCELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
 
-    trainer = kka.KkTrain(config, model, dataset=dataset, dataset_val=dataset_val, loss_fn=loss_fun, optim=optim)
+    trainer = kka.KkTrain(model=model, dataset=dataset, dataset_val=dataset_val, loss_fn=loss_fun, optim=optim)
     trainer.train()

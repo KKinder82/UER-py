@@ -6,12 +6,12 @@ import kk.uer.kk_config as kkc
 
 
 class RBModel(kka.KkAppModel):
-    def __init__(self, config: kkc.KkmConfig, context=None):
-        super(RBModel, self).__init__(config)
-        self.context_net = kkl.KkFFNLayer(config, 33 + 16, 128)
-        self.x_net = kkl.KkFFNLayer(config, 88, 128)
-        self.backbone = kkt.KkTransformer(config=config, in_feather=128, loops=6)
-        self.classifier = kkl.KkClassifierLayer(config, 128, 49, one_formal="sigmoid")
+    def __init__(self, context=None):
+        super(RBModel, self).__init__()
+        self.context_net = kkl.KkFFNLayer(33 + 16, 128)
+        self.x_net = kkl.KkFFNLayer(88, 128)
+        self.backbone = kkt.KkTransformer(in_feather=128, loops=6)
+        self.classifier = kkl.KkClassifierLayer(128, 49, one_formal="sigmoid")
         if context is None:
             context = torch.zeros((1, 33 + 16), dtype=torch.float32)
         self.register_buffer("context", context)

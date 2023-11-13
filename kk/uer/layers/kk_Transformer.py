@@ -11,12 +11,12 @@ import math
 
 
 class KkTransformerEncode(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, in_feather: int,
+    def __init__(self, in_feather: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
-        super(KkTransformerEncode, self).__init__(config)
-        self.MSA = kksa.KkMultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
+        super(KkTransformerEncode, self).__init__()
+        self.MSA = kksa.KkMultiSelfAttation(in_feather, in_feather, loops=loops, out_feathers=in_feather)
         self.MSANorm = nn.LayerNorm(in_feather)
-        self.FFN = kkl.KkFFNLayer(config, in_feather, in_feather)
+        self.FFN = kkl.KkFFNLayer(in_feather, in_feather)
         self.FFNNorm = nn.LayerNorm(in_feather)
         pass
 
@@ -34,14 +34,14 @@ class KkTransformerEncode(kkb.KkModule):
 
 
 class KkTransformerDecode(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, in_feather: int,
+    def __init__(self, in_feather: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
-        super(KkTransformerDecode, self).__init__(config)
-        self.MSA = kksa.KkMultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
+        super(KkTransformerDecode, self).__init__()
+        self.MSA = kksa.KkMultiSelfAttation(in_feather, in_feather, loops=loops, out_feathers=in_feather)
         self.MSANorm = nn.LayerNorm(in_feather)
-        self.MSA2 = kksa.KkMultiSelfAttation(config, in_feather, in_feather, loops=loops, out_feathers=in_feather)
+        self.MSA2 = kksa.KkMultiSelfAttation(in_feather, in_feather, loops=loops, out_feathers=in_feather)
         self.MSA2Norm = nn.LayerNorm(in_feather)
-        self.FFN = kkl.KkFFNLayer(config, in_feather, in_feather)
+        self.FFN = kkl.KkFFNLayer(in_feather, in_feather)
         self.FFNNorm = nn.LayerNorm(in_feather)
         pass
 
@@ -62,12 +62,12 @@ class KkTransformerDecode(kkb.KkModule):
 
 
 class KkTransformer(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, in_feather: int,
+    def __init__(self, in_feather: int,
                  head_feathers: int = 128, head_size: int = 8, loops: int = 6):
-        super(KkTransformer, self).__init__(config)
-        self.encoder = KkTransformerEncode(config, in_feather,
+        super(KkTransformer, self).__init__()
+        self.encoder = KkTransformerEncode(in_feather,
                                            head_feathers=head_feathers, head_size=head_size, loops=loops)
-        self.decoder = KkTransformerDecode(config, in_feather,
+        self.decoder = KkTransformerDecode(in_feather,
                                            head_feathers=head_feathers, head_size=head_size, loops=loops)
 
     def forward(self, context, x):

@@ -14,9 +14,9 @@ import kk.uer.kk_config as kkc
 
 
 class KkTestModel(kka.KkAppModel):
-    def __init__(self, config: kkc.KkmConfig, *, in_feather: int = 2):
-        super(KkTestModel, self).__init__(config)
-        self.Linear = kkl.KkLinear(config, in_feather=in_feather, out_feather=1)
+    def __init__(self, *, in_feather: int = 2):
+        super(KkTestModel, self).__init__()
+        self.Linear = kkl.KkLinear(in_feather=in_feather, out_feather=1)
 
     def forward(self, x):
         o = self.Linear(x)
@@ -24,12 +24,12 @@ class KkTestModel(kka.KkAppModel):
 
 
 class KkTestSelfAttationModel(kka.KkAppModel):
-    def __init__(self, config: kkc.KkmConfig, *, in_feather: int = 10):
-        super(KkTestSelfAttationModel, self).__init__(config)
+    def __init__(self, *, in_feather: int = 10):
+        super(KkTestSelfAttationModel, self).__init__()
 
-        self.net = kksa.KkSelfAttationItem(config, qk_feathers=in_feather, v_feathers=in_feather,
+        self.net = kksa.KkSelfAttationItem(qk_feathers=in_feather, v_feathers=in_feather,
                                            out_feathers=in_feather)
-        self.Linear = kkl.KkLinear(config, in_feather=in_feather, out_feather=1)
+        self.Linear = kkl.KkLinear(in_feather=in_feather, out_feather=1)
         # _context = torch.zeros(1, in_feather, dtype=torch.float32)
         # self.register_buffer("context", _context)
 

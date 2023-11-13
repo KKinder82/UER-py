@@ -5,7 +5,7 @@ import random
 import kk.uer.kk_config as kkc
 
 
-def init_weights(config: kkc.KkmConfig, model, *, mean=0.0, std: (str, float) = 0.01):
+def init_weights(model, *, mean=0.0, std: (str, float) = 0.01):
     if isinstance(std, str):
         if std == "relu":
             std = math.sqrt(2.0 / model.weight.size(-1))
@@ -84,11 +84,8 @@ def get_constant_parameter(*shape, value: int = 1):
 
 
 class KkModule(nn.Module):
-    config: kkc.KkmConfig
-
-    def __init__(self, config: kkc.KkmConfig):
+    def __init__(self):
         super(KkModule, self).__init__()
-        # self.config = config
 
     def epoch_reset(self, **args):
         # iepoch = args["iepoch"]

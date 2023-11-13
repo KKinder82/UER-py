@@ -1,17 +1,11 @@
-import torch
+
 import torch.nn as nn
-import torch.utils.data as torchdata
-import numpy as np
-import kk.kk_utils as kku
-import kk.apps.kk_app as kka
-import kk.uer.layers.kk_Linear as kkl
-import kk.uer.layers.kk_Transformer as kkt
-import kk.uer.kk_config as kkc
+import kk.uer.kk_base as kkb
 
 
-class NumInferModel(kka.KkModule):
-    def __init__(self, config: kkc.KkmConfig):
-        super(NumInferModel, self).__init__(config)
+class NumInferModel(kkb.KkModule):
+    def __init__(self,):
+        super(NumInferModel, self).__init__()
         self.L1 = nn.Linear(4, 2)
         self.Relu1 = nn.ReLU()
         self.L2 = nn.Linear(2, 2)

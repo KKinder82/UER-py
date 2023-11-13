@@ -9,7 +9,12 @@ import time
 
 
 class KkmConfig(object):
+    config = None
+
     def __init__(self, app_path: str, *args, **kwargs):  # args:可变数量参数； kwargs：关键字参数（可变数量）
+        if KkmConfig.config is not None:
+            return
+
         log.basicConfig(level=log.INFO, format="%(created)f %(asctime)s %(levelname)s %(message)s \r\n", datefmt="%Y-%m-%d %H:%M:%S")
         # 应用配置
         self.app_name = "DLApp"
@@ -84,6 +89,8 @@ class KkmConfig(object):
         torch.cuda.manual_seed_all(self.rank + time.time())
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+        KkmConfig.config = self
 
     def sys_init(self):
         self.sys_ibatch = -1

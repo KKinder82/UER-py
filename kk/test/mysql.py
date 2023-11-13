@@ -3,9 +3,11 @@ import os
 import random
 import pathlib as pl
 
+
 def get_conn():
     db = pymysql.connect(host="127.0.0.1", user="root", password="root", database="bori_lcms")
     return db
+
 
 def split(data_path):
     n_weights = [0.7,0.2,0.1]
@@ -60,6 +62,7 @@ def gen_corpus():
     cursor.close()
     db.close()
     print(" >> finished ")
+
 
 def gen_data_train(count=100000):
     db = get_conn()
