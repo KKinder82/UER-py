@@ -11,13 +11,13 @@ import math
 
 
 class KkTransformerEncode(kkb.KkModule):
-    def __init__(self, in_feather: int,
+    def __init__(self, in_feathers: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
         super(KkTransformerEncode, self).__init__()
-        self.MSA = kksa.KkMultiSelfAttation(in_feather, in_feather, loops=loops, out_feathers=in_feather)
-        self.MSANorm = nn.LayerNorm(in_feather)
-        self.FFN = kkl.KkFFNLayer(in_feather, in_feather)
-        self.FFNNorm = nn.LayerNorm(in_feather)
+        self.MSA = kksa.KkMultiSelfAttation(in_feathers, in_feathers, loops=loops)
+        self.MSANorm = nn.LayerNorm(in_feathers)
+        self.FFN = kkl.KkFFNLayer(in_feathers, in_feathers)
+        self.FFNNorm = nn.LayerNorm(in_feathers)
         pass
 
     def forward(self, qkv, out_format: int = 0):
@@ -34,15 +34,15 @@ class KkTransformerEncode(kkb.KkModule):
 
 
 class KkTransformerDecode(kkb.KkModule):
-    def __init__(self, in_feather: int,
+    def __init__(self, in_feathers: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
         super(KkTransformerDecode, self).__init__()
-        self.MSA = kksa.KkMultiSelfAttation(in_feather, in_feather, loops=loops, out_feathers=in_feather)
-        self.MSANorm = nn.LayerNorm(in_feather)
-        self.MSA2 = kksa.KkMultiSelfAttation(in_feather, in_feather, loops=loops, out_feathers=in_feather)
-        self.MSA2Norm = nn.LayerNorm(in_feather)
-        self.FFN = kkl.KkFFNLayer(in_feather, in_feather)
-        self.FFNNorm = nn.LayerNorm(in_feather)
+        self.MSA = kksa.KkMultiSelfAttation(in_feathers, in_feathers, loops=loops)
+        self.MSANorm = nn.LayerNorm(in_feathers)
+        self.MSA2 = kksa.KkMultiSelfAttation(in_feathers, in_feathers, loops=loops)
+        self.MSA2Norm = nn.LayerNorm(in_feathers)
+        self.FFN = kkl.KkFFNLayer(in_feathers, in_feathers)
+        self.FFNNorm = nn.LayerNorm(in_feathers)
         pass
 
     def forward(self, q, kv, out_format: int = 0):
@@ -62,12 +62,12 @@ class KkTransformerDecode(kkb.KkModule):
 
 
 class KkTransformer(kkb.KkModule):
-    def __init__(self, in_feather: int,
+    def __init__(self, in_feathers: int, *,
                  head_feathers: int = 128, head_size: int = 8, loops: int = 6):
         super(KkTransformer, self).__init__()
-        self.encoder = KkTransformerEncode(in_feather,
+        self.encoder = KkTransformerEncode(in_feathers,
                                            head_feathers=head_feathers, head_size=head_size, loops=loops)
-        self.decoder = KkTransformerDecode(in_feather,
+        self.decoder = KkTransformerDecode(in_feathers,
                                            head_feathers=head_feathers, head_size=head_size, loops=loops)
 
     def forward(self, context, x):

@@ -11,13 +11,13 @@ import math
 
 
 class KkSelfAttationItem(kkb.KkModule):
-    def __init__(self, qk_feathers: int, out_feathers: int, v_feathers: int,
-                 inner_feathers: int = 256, *, normalization: str = "none"):
+    def __init__(self, in_feathers: int, out_feathers: int, *,
+                 inner_feathers: int = 256, normalization: str = "none"):
         super(KkSelfAttationItem, self).__init__()
         self.inner_feathers = inner_feathers
-        self.qnet = kkl.KkLinear(qk_feathers, inner_feathers)
-        self.knet = kkl.KkLinear(qk_feathers, inner_feathers)
-        self.vnet = kkl.KkLinear(v_feathers, out_feathers)
+        self.qnet = kkl.KkLinear(in_feathers, inner_feathers)
+        self.knet = kkl.KkLinear(in_feathers, inner_feathers)
+        self.vnet = kkl.KkLinear(in_feathers, out_feathers)
         self.softmax = nn.Softmax(-1)
 
     def forward(self, q, k, v, *, postion_encoding: bool = False):
@@ -63,14 +63,14 @@ class KkSelfAttationItem(kkb.KkModule):
 
 
 class KkSelfAttation(kkb.KkModule):
-    def __init__(self, *, qk_feathers: int, out_feathers: int, v_feathers: int,
-                 inner_feathers: int = 256, loops: int = 6, normalization: str = "none"):
+    def __init__(self, *, in_feathers: int, out_feathers: int, inner_feathers: int = 256,
+                 loops: int = 6, normalization: str = "none"):
         super(KkSelfAttation, self).__init__()
-        self.SA1 = KkSelfAttationItem(qk_feathers, inner_feathers, v_feathers, inner_feathers,
+        self.SA1 = KkSelfAttationItem(in_feathers, inner_feathers, v_feathers, inner_feathers,
                                       normalization="layer")
-        self.SAs = [KkSelfAttationItem(inner_feathers, inner_feathers, inner_feathers, inner_feathers,
+        self.SAs = [KkSelfAttationItem(in_feathers, inner_feathers, inner_feathers, inner_feathers,
                                        normalization="layer") for _ in range(loops)]
-        self.SAl = KkSelfAttationItem(inner_feathers, out_feathers, inner_feathers, inner_feathers,
+        self.SAl = KkSelfAttationItem(in_feathers, out_feathers, inner_feathers, inner_feathers,
                                       normalization=normalization)
 
     def forward(self, q, k, v):
@@ -82,14 +82,14 @@ class KkSelfAttation(kkb.KkModule):
 
 
 class KkMultiSelfAttationItem(kkb.KkModule):
-    def __init__(self, q_feathers: int, kv_feathers: int, out_feathers: int,
-                 head_feathers: int = 512, head_count: int = 8, *, normalization: str = "none"):
+    def __init__(self, in_feathers: int, out_feathers: int, *,
+                 head_feathers: int = 512, head_count: int = 8, normalization: str = "none"):
         super(KkMultiSelfAttationItem, self).__init__()
         self.head_count = head_count
         self.head_feathers = head_feathers
-        self.QNets = nn.ModuleList([kkl.KkLinear(q_feathers, head_feathers) for _ in range(head_count)])
-        self.KNets = nn.ModuleList([kkl.KkLinear(kv_feathers, head_feathers) for _ in range(head_count)])
-        self.VNets = nn.ModuleList([kkl.KkLinear(kv_feathers, head_feathers) for _ in range(head_count)])
+        self.QNets = nn.ModuleList([kkl.KkLinear(in_feathers, head_feathers) for _ in range(head_count)])
+        self.KNets = nn.ModuleList([kkl.KkLinear(in_feathers, head_feathers) for _ in range(head_count)])
+        self.VNets = nn.ModuleList([kkl.KkLinear(in_feathers, head_feathers) for _ in range(head_count)])
         self.Softmax = nn.Softmax(-1)
         self.Linear = kkl.KkLinear(head_feathers * head_count, out_feathers)
         self.Norm = kkn.get_normalization(normalization)
@@ -115,21 +115,21 @@ class KkMultiSelfAttationItem(kkb.KkModule):
 
 
 class KkMultiSelfAttation(kkb.KkModule):
-    def __init__(self, *,
-                 q_feathers: int, kv_feathers: int,
+    def __init__(self, in_feathers: int, out_feathers: int = 0, *,
                  head_feathers: int = 128, head_count: int = 8, loops: int = 6,
-                 out_feathers: int = 0,
                  normalization: str = "none"):
         super(KkMultiSelfAttation, self).__init__()
         self.out_feathers = out_feathers
         inner_feathers = head_feathers * head_count
-        self.SA1 = KkMultiSelfAttationItem(q_feathers, kv_feathers, inner_feathers, head_feathers, head_count,
+        self.SA1 = KkMultiSelfAttationItem(in_feathers, inner_feathers,
+                                           head_feathers=head_feathers, head_count=head_count,
                                            normalization="layer")
         self.SAs = nn.ModuleList([
-            KkMultiSelfAttationItem(inner_feathers, inner_feathers,inner_feathers, head_feathers, head_count,
+            KkMultiSelfAttationItem(inner_feathers, inner_feathers,
+                                    head_feathers=head_feathers, head_count=head_count,
                                     normalization="layer") for _ in range(loops)])
-        self.SAl = KkMultiSelfAttationItem(inner_feathers, inner_feathers, out_feathers,
-                                           head_feathers, head_count)
+        self.SAl = KkMultiSelfAttationItem(inner_feathers, out_feathers,
+                                           head_feathers=head_feathers, head_count=head_count)
 
     def forward(self, q, k=None, v=None):
         if k is None:

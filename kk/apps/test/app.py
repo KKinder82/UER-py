@@ -52,6 +52,29 @@ def test_selfattation():
     trainer.train()
 
 
+def test_transforms():
+    # 运行指令 torchrun --nperc-per-node 1 .\kk_app.py
+    config = kkc.KkmConfig(__file__)
+    feather_size = 11
+
+    datas = torch.randn(10, feather_size)
+    datas[:, feather_size-1] = datas[:, 0:feather_size-2].sum(dim=1) / 3.1415926
+    dataset = kka.KkDataset(datas)
+
+    datas_val = torch.randn(2, feather_size)
+    datas_val[:, feather_size-1] = datas_val[:, 0:feather_size-2].sum(dim=1) / 3.1415926
+    dataset_val = kka.KkDataset(datas_val)
+
+    model = models.KkTestSelfAttationModel()
+    loss_fn = kka.KkExtendLoss(lossFn=nn.MSELoss())
+    optim = torch.optim.Adam(model.parameters(), lr=0.001)
+
+    trainer = kka.KkTrain(model=model,
+                          dataset=dataset, dataset_val=dataset_val,
+                          loss_fn=loss_fn, optim=optim)
+    trainer.train()
+
+
 if __name__ == "__main__":
-    test_simple()
+    test_selfattation()
 

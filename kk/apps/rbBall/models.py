@@ -10,7 +10,7 @@ class RBModel(kka.KkAppModel):
         super(RBModel, self).__init__()
         self.context_net = kkl.KkFFNLayer(33 + 16, 128)
         self.x_net = kkl.KkFFNLayer(88, 128)
-        self.backbone = kkt.KkTransformer(in_feather=128, loops=6)
+        self.backbone = kkt.KkTransformer(in_feathers=128, loops=6)
         self.classifier = kkl.KkClassifierLayer(128, 49, one_formal="sigmoid")
         if context is None:
             context = torch.zeros((1, 33 + 16), dtype=torch.float32)
@@ -20,7 +20,7 @@ class RBModel(kka.KkAppModel):
     def forward(self, x):
         _context = self.context_net(self.context)
         _x = self.x_net(x)
-        o = self.backbone(_context, _x, last_o=None)
+        o = self.backbone(_context, _x)
         o = self.classifier(o)
         return o
 
@@ -31,7 +31,6 @@ class RBModel(kka.KkAppModel):
         # loss = args["loss"]
         self.context = self.context + torch.sum(y, dim=0)
         pass
-
 
     def epoch_reset(self, **args):
         iepoch = args["iepoch"]

@@ -12,7 +12,7 @@ import copy
 
 
 class KkLinear(kkb.KkModule):
-    def __init__(self, in_feather: int, out_feather: int,
+    def __init__(self, in_feathers: int, out_feather: int,
                  *,
                  tradition: bool = False,
                  init_std: (str, float) = "normal",
@@ -20,12 +20,12 @@ class KkLinear(kkb.KkModule):
         super(KkLinear, self).__init__()
         self.tradition = tradition
         if self.tradition:
-            self.Linear = nn.Linear(in_feather, out_feather, bias=True)
+            self.Linear = nn.Linear(in_feathers, out_feather, bias=True)
             kkb.init_weights(self.Linear, std=init_std)
         else:
-            inner_feather = math.ceil(100 / in_feather)
-            # perc_weights = torch.randn(in_feather, inner_feather, dtype=torch.float32) * 10
-            perc_weights = kkb.get_randn_parameter(in_feather, inner_feather, std="kk")
+            inner_feather = math.ceil(100 / in_feathers)
+            # perc_weights = torch.randn(in_feathers, inner_feather, dtype=torch.float32) * 10
+            perc_weights = kkb.get_randn_parameter(in_feathers, inner_feather, std="kk")
             self.register_buffer("perc_weights", perc_weights)
 
             self.Linear = nn.Linear(inner_feather, out_feather, bias=True)
@@ -42,7 +42,7 @@ class KkLinear(kkb.KkModule):
 
 
 # class KkLinear(kkb.KkModule):
-#     def __init__(self, config: kkc.KkmConfig, in_feather: int, out_feather: int,
+#     def __init__(self, config: kkc.KkmConfig, in_feathers: int, out_feather: int,
 #                  *,
 #                  tradition: bool = False,
 #                  init_std: (str, float) = "normal",
@@ -50,14 +50,14 @@ class KkLinear(kkb.KkModule):
 #         super(KkLinear, self).__init__(config)
 #         self.tradition = tradition
 #         if self.tradition:
-#             weight = kkb.get_randn_parameter(in_feather, out_feather, std=init_std)
+#             weight = kkb.get_randn_parameter(in_feathers, out_feather, std=init_std)
 #             self.weight = nn.Parameter(weight)
 #             bias = kkb.get_randn_parameter(1, out_feather, std=init_std)
 #             self.bias = nn.Parameter(bias)
 #         else:
-#             inner_feather = math.ceil(100 / in_feather)
-#             # perc_weights = torch.randn(in_feather, inner_feather, dtype=torch.float32) * 10
-#             perc_weights = kkb.get_randn_parameter(in_feather, inner_feather, std="kk")
+#             inner_feather = math.ceil(100 / in_feathers)
+#             # perc_weights = torch.randn(in_feathers, inner_feather, dtype=torch.float32) * 10
+#             perc_weights = kkb.get_randn_parameter(in_feathers, inner_feather, std="kk")
 #             self.register_buffer("perc_weights", perc_weights)
 #
 #             weight = kkb.get_randn_parameter(inner_feather, out_feather, std=init_std)
@@ -79,7 +79,7 @@ class KkLinear(kkb.KkModule):
 
 #
 # class KkLinear(kkb.KkModule):
-#     def __init__(self, config: kkc.KkmConfig, in_feather: int, out_feather: int,
+#     def __init__(self, config: kkc.KkmConfig, in_feathers: int, out_feather: int,
 #                  *,
 #                  tradition: bool = False,
 #                  init_std: (str, float) = "normal",
@@ -87,12 +87,12 @@ class KkLinear(kkb.KkModule):
 #         super(KkLinear, self).__init__(config)
 #         self.tradition = tradition
 #         if self.tradition:
-#             self.Linear = nn.Linear(in_feather, out_feather, bias=True)
+#             self.Linear = nn.Linear(in_feathers, out_feather, bias=True)
 #             kkb.init_weights(config, self.Linear, std=init_std)
 #         else:
-#             inner_feather = math.ceil(100 / in_feather)
-#             # perc_weights = torch.randn(in_feather, inner_feather, dtype=torch.float32) * 10
-#             perc_weights = kkb.get_randn_parameter(in_feather, inner_feather, std="kk")
+#             inner_feather = math.ceil(100 / in_feathers)
+#             # perc_weights = torch.randn(in_feathers, inner_feather, dtype=torch.float32) * 10
+#             perc_weights = kkb.get_randn_parameter(in_feathers, inner_feather, std="kk")
 #             self.register_buffer("perc_weights", perc_weights)
 #
 #             self.Linear = nn.Linear(inner_feather, out_feather, bias=True)
@@ -108,13 +108,13 @@ class KkLinear(kkb.KkModule):
 #         return o
 
 # class KkLinear(kkb.KkModule):
-#     def __init__(self, config: kkc.KkmConfig, in_feather: int, out_feather: int,
+#     def __init__(self, config: kkc.KkmConfig, in_feathers: int, out_feather: int,
 #                  *,
 #                  tradition: bool = False,
 #                  init_std: (str, float) = "normal",
 #                  normalization: str = "none"):
 #         super(KkLinear, self).__init__(config)
-#         self.Linear = nn.Linear(in_feather, out_feather, bias=True)
+#         self.Linear = nn.Linear(in_feathers, out_feather, bias=True)
 #
 #     def forward(self, x):
 #         o = self.Linear(x)
@@ -122,9 +122,9 @@ class KkLinear(kkb.KkModule):
 
 
 class KkFFNLayer(kkb.KkModule):
-    def __init__(self, in_feather: int, out_feathers: int, inner_feathers: int = 128):
+    def __init__(self, in_feathers: int, out_feathers: int, inner_feathers: int = 128):
         super(KkFFNLayer, self).__init__()
-        self.FFN = nn.Sequential(KkLinear(in_feather, inner_feathers),
+        self.FFN = nn.Sequential(KkLinear(in_feathers, inner_feathers),
                                  nn.ReLU(),
                                  KkLinear(inner_feathers, out_feathers))
 
@@ -134,12 +134,12 @@ class KkFFNLayer(kkb.KkModule):
 
 
 class KkClassifierLayer(kkb.KkModule):
-    def __init__(self, in_feather: int, classes: int,
+    def __init__(self, in_feathers: int, classes: int,
                  *,
                  one_formal: str = "softmax",
                  loops: int = 0, inner_feathers: int = 128):
         super(KkClassifierLayer, self).__init__()
-        self.FFN0 = nn.Sequential(KkLinear(in_feather, inner_feathers),
+        self.FFN0 = nn.Sequential(KkLinear(in_feathers, inner_feathers),
                                   nn.ReLU())
         self.FFNx = nn.ModuleList([nn.Sequential(KkLinear(inner_feathers, inner_feathers), nn.ReLU())
                                   for _ in range(loops)])
@@ -159,13 +159,13 @@ class KkClassifierLayer(kkb.KkModule):
 
 
 class KkExtendlayer(kkb.KkModule):
-    def __init__(self, pos: int, in_feather, extend_feather: int, norm: bool = False):
+    def __init__(self, pos: int, in_feathers, extend_feather: int, norm: bool = False):
         super(KkExtendlayer, self).__init__()
         self.pos = pos
         self.norm = norm
-        self.Linear = nn.Linear(in_feather, in_feather * extend_feather, bias=False if norm else True)
+        self.Linear = nn.Linear(in_feathers, in_feathers * extend_feather, bias=False if norm else True)
         if self.norm:
-            self.Norm = nn.LayerNorm(in_feather * extend_feather)
+            self.Norm = nn.LayerNorm(in_feathers * extend_feather)
 
     def forward(self, x):
         o = self.Linear(x)

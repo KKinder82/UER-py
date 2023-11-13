@@ -668,10 +668,11 @@ class KkTrain(KkApp):
         finally:
             self._device_uninit()
 
+
 class KkDemoModel(kkb.KkModule):
-    def __init__(self, *, in_feather: int = 2):
+    def __init__(self, *, in_feathers: int = 2):
         super(KkDemoModel, self).__init__()
-        self.Linear = nn.Linear(in_feather, 1)
+        self.Linear = nn.Linear(in_feathers, 1)
 
     def forward(self, x):
         o = self.Linear(x)
@@ -688,7 +689,7 @@ def torchrun():
     datas_val = torch.randn(100, 3)
     datas_val[:, 2] = datas_val[:, 0:2].sum(dim=1) / 3.1415926
     dataset_val = KkDataset(datas_val)
-    model = KkDemoModel(in_feather=2)
+    model = KkDemoModel(in_feathers=2)
     loss_fn = KkExtendLoss(lossFn=nn.MSELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
     trainer = KkTrain(model=model, dataset=dataset, dataset_val=dataset_val,
