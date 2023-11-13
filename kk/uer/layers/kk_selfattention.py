@@ -5,15 +5,15 @@ import numpy as np
 import kk.apps.kk_app as kka
 import kk.uer.kk_base as kkb
 import kk.uer.kk_config as kkc
-import kk.uer.layers.kk_Linear as kkl
-import kk.uer.layers.kk_Normalization as kkn
+import kk.uer.layers.kk_linear as kkl
+import kk.uer.layers.kk_normalization as kkn
 import math
 
 
-class KkSelfAttationItem(kkb.KkModule):
+class KkSelfAttentionItem(kkb.KkModule):
     def __init__(self, in_feathers: int, out_feathers: int, *,
                  inner_feathers: int = 256, normalization: str = "none"):
-        super(KkSelfAttationItem, self).__init__()
+        super(KkSelfAttentionItem, self).__init__()
         self.inner_feathers = inner_feathers
         self.qnet = kkl.KkLinear(in_feathers, inner_feathers)
         self.knet = kkl.KkLinear(in_feathers, inner_feathers)
@@ -62,16 +62,16 @@ class KkSelfAttationItem(kkb.KkModule):
 #         return o
 
 
-class KkSelfAttation(kkb.KkModule):
+class KkSelfAttention(kkb.KkModule):
     def __init__(self, *, in_feathers: int, out_feathers: int, inner_feathers: int = 256,
                  loops: int = 6, normalization: str = "none"):
-        super(KkSelfAttation, self).__init__()
-        self.SA1 = KkSelfAttationItem(in_feathers, inner_feathers, v_feathers, inner_feathers,
-                                      normalization="layer")
-        self.SAs = [KkSelfAttationItem(in_feathers, inner_feathers, inner_feathers, inner_feathers,
-                                       normalization="layer") for _ in range(loops)]
-        self.SAl = KkSelfAttationItem(in_feathers, out_feathers, inner_feathers, inner_feathers,
-                                      normalization=normalization)
+        super(KkSelfAttention, self).__init__()
+        self.SA1 = KkSelfAttentionItem(in_feathers, inner_feathers, v_feathers, inner_feathers,
+                                       normalization="layer")
+        self.SAs = [KkSelfAttentionItem(in_feathers, inner_feathers, inner_feathers, inner_feathers,
+                                        normalization="layer") for _ in range(loops)]
+        self.SAl = KkSelfAttentionItem(in_feathers, out_feathers, inner_feathers, inner_feathers,
+                                       normalization=normalization)
 
     def forward(self, q, k, v):
         o = self.SA1(q, k, v)
@@ -81,10 +81,10 @@ class KkSelfAttation(kkb.KkModule):
         return o
 
 
-class KkMultiSelfAttationItem(kkb.KkModule):
+class KkMultiSelfAttentionItem(kkb.KkModule):
     def __init__(self, in_feathers: int, out_feathers: int, *,
                  head_feathers: int = 512, head_count: int = 8, normalization: str = "none"):
-        super(KkMultiSelfAttationItem, self).__init__()
+        super(KkMultiSelfAttentionItem, self).__init__()
         self.head_count = head_count
         self.head_feathers = head_feathers
         self.QNets = nn.ModuleList([kkl.KkLinear(in_feathers, head_feathers) for _ in range(head_count)])
@@ -114,22 +114,22 @@ class KkMultiSelfAttationItem(kkb.KkModule):
         return o
 
 
-class KkMultiSelfAttation(kkb.KkModule):
-    def __init__(self, in_feathers: int, out_feathers: int = 0, *,
+class KkMultiSelfAttention(kkb.KkModule):
+    def __init__(self, in_feathers: int, out_feathers: int, *,
                  head_feathers: int = 128, head_count: int = 8, loops: int = 6,
                  normalization: str = "none"):
-        super(KkMultiSelfAttation, self).__init__()
+        super(KkMultiSelfAttention, self).__init__()
         self.out_feathers = out_feathers
         inner_feathers = head_feathers * head_count
-        self.SA1 = KkMultiSelfAttationItem(in_feathers, inner_feathers,
-                                           head_feathers=head_feathers, head_count=head_count,
-                                           normalization="layer")
+        self.SA1 = KkMultiSelfAttentionItem(in_feathers, inner_feathers,
+                                            head_feathers=head_feathers, head_count=head_count,
+                                            normalization="layer")
         self.SAs = nn.ModuleList([
-            KkMultiSelfAttationItem(inner_feathers, inner_feathers,
-                                    head_feathers=head_feathers, head_count=head_count,
-                                    normalization="layer") for _ in range(loops)])
-        self.SAl = KkMultiSelfAttationItem(inner_feathers, out_feathers,
-                                           head_feathers=head_feathers, head_count=head_count)
+            KkMultiSelfAttentionItem(inner_feathers, inner_feathers,
+                                     head_feathers=head_feathers, head_count=head_count,
+                                     normalization="layer") for _ in range(loops)])
+        self.SAl = KkMultiSelfAttentionItem(inner_feathers, out_feathers,
+                                            head_feathers=head_feathers, head_count=head_count)
 
     def forward(self, q, k=None, v=None):
         if k is None:
@@ -143,16 +143,3 @@ class KkMultiSelfAttation(kkb.KkModule):
         return o
 
 
-if __name__ == "__main__":
-    x = torch.randn((1, 88), dtype=torch.float32)
-    # print(x.shape[0:-1])
-    # x = x.view(*x.shape[0:-1], 1, -1)
-    # x = x.transpose(-3, -2)
-    # print(x.shape)
-    # exit()
-    # x = kkl.Kk_FeatherLayer(None, 88, 128)(x)
-    SA = KkMultiSelfAttation(None, 88, 88, out_feathers=10, normalization="layer")
-    x = SA(x, x, x)
-    print("**A**")
-    print(x)
-    print(x.shape)

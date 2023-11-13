@@ -37,10 +37,42 @@ def kk_gen():
     print("10.收到 x={}".format(x))
 
 
-
-
-
 def main():
+    # concat 的用法
+    x = torch.tensor([[4, 5, 6]])
+    y = torch.tensor([[3, 3, 3], [5, 5, 6]])
+    x = x.expand(2, -1)         # -1 的用法
+    z = [x, y]
+    o = torch.cat(z, dim=1)  # shape(4 * 3)
+    print(o)
+    exit(0)
+
+    x = torch.arange(6).reshape(2, 3, 1)
+    y = torch.arange(6).reshape(2, 1, 3)
+    o = x @ y
+    print(o.shape)
+    print(o)
+    print(x)
+    print(y)
+    exit(0)
+
+    # expand 只能对维度值包含 1 的张量Tensor进行扩展
+    x = torch.tensor([[[1, 2], [3, 4]]])
+    # 在第一个维度上扩展为两倍，在第二个维度上扩展为三倍
+    y = x.expand(3, 5, 1, 1)
+    print(y.shape)
+    print(y)
+    exit(0)
+
+    # repeat 方法 重复张量
+    a = torch.arange(6)
+    a = a.view(2, 3)
+    print(a)
+    b = a.repeat(5, 1, 1)  # 是 0 维 的 5 是最后 增长的
+    print(b.shape)
+    print(b)
+    exit(0)
+
     a = torch.arange(6)
     print(a[0:-2])
     print(a[-2:])

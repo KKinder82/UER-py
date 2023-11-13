@@ -18,7 +18,7 @@ import kk.kk_utils as kku
 import random
 import kk.uer.kk_config as kkc
 import kk.uer.kk_base as kkb
-import kk.uer.layers.kk_Linear as kkl
+import kk.uer.layers.kk_linear as kkl
 
 
 class KkSigmoid(kkb.KkModule):

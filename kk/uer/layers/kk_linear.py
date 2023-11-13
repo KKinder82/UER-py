@@ -6,14 +6,13 @@ import kk.apps.kk_app as kka
 import kk.uer.kk_base as kkb
 import kk.uer.kk_config as kkc
 import kk.kk_utils as kku
-import kk.uer.layers.kk_Normalization as kkn
+import kk.uer.layers.kk_normalization as kkn
 import math
 import copy
 
 
 class KkLinear(kkb.KkModule):
-    def __init__(self, in_feathers: int, out_feathers: int,
-                 *,
+    def __init__(self, in_feathers: int, out_feathers: int, *,
                  tradition: bool = False,
                  init_std: (str, float) = "normal",
                  normalization: str = "none"):
@@ -121,16 +120,13 @@ class KkFFNLayer(kkb.KkModule):
 
 
 class KkClassifierLayer(kkb.KkModule):
-    def __init__(self, in_feathers: int, classes: int,
-                 *,
-                 one_formal: str = "softmax",
-                 loops: int = 0, inner_feathers: int = 128):
+    def __init__(self, in_feathers: int, classes: int, *,
+                 one_formal: str = "softmax", inner_feathers: int = 128, loops: int = 0):
         super(KkClassifierLayer, self).__init__()
-        self.FFN0 = nn.Sequential(KkLinear(in_feathers, inner_feathers),
-                                  nn.ReLU())
-        self.FFNx = nn.ModuleList([nn.Sequential(KkLinear(inner_feathers, inner_feathers), nn.ReLU())
-                                  for _ in range(loops)])
-        self.FFNe = KkLinear(inner_feathers, classes)
+        self.FFN0 = nn.Sequential(KkLinear(in_feathers, inner_feathers), nn.ReLU())
+        self.FFNx = nn.ModuleList([nn.Sequential(KkLinear(inner_feathers, inner_feathers),
+                                                 nn.ReLU()) for _ in range(loops)])
+        self.FFN9 = KkLinear(inner_feathers, classes)
 
         if one_formal == "sigmoid":
             self.Norm = nn.Sigmoid()
@@ -139,18 +135,21 @@ class KkClassifierLayer(kkb.KkModule):
 
     def forward(self, x):
         o = self.FFN0(x)
+        last_o = o
         for ffn in self.FFNx:
-            o = ffn(o)
-        o = self.FFNe(o)
+            _o = ffn(o)
+            o += _o + last_o
+            last_o = _o
+        o = self.FFN9(o)
         return self.Norm(o)
 
 
 class KkExtendlayer(kkb.KkModule):
-    def __init__(self, pos: int, in_feathers, extend_feather: int, norm: bool = False):
+    def __init__(self, in_feathers, extend_feather: int, *, norm: bool = False):
         super(KkExtendlayer, self).__init__()
-        self.pos = pos
         self.norm = norm
-        self.Linear = nn.Linear(in_feathers, in_feathers * extend_feather, bias=False if norm else True)
+        self.Linear = nn.Linear(in_feathers, in_feathers * extend_feather,
+                                bias=False if norm else True)
         if self.norm:
             self.Norm = nn.LayerNorm(in_feathers * extend_feather)
 
@@ -159,9 +158,7 @@ class KkExtendlayer(kkb.KkModule):
         if self.norm:
             o = self.Norm(o)
         o = o.view(*x.shape, -1)
-        if self.pos is None:
-            return o
-        return o.reshape(*x.shape[:self.pos], -1, *x.shape[self.pos:])
+        return o
 
 
 if __name__ == "__main__":

@@ -5,8 +5,8 @@ import numpy as np
 import kk.apps.kk_app as kka
 import kk.uer.kk_base as kkb
 import kk.uer.kk_config as kkc
-import kk.uer.layers.kk_Selfattation as kksa
-import kk.uer.layers.kk_Linear as kkl
+import kk.uer.layers.kk_selfattention as kksa
+import kk.uer.layers.kk_linear as kkl
 import math
 
 
@@ -14,7 +14,7 @@ class KkTransformerEncode(kkb.KkModule):
     def __init__(self, in_feathers: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
         super(KkTransformerEncode, self).__init__()
-        self.MSA = kksa.KkMultiSelfAttation(in_feathers, in_feathers, loops=loops)
+        self.MSA = kksa.KkMultiSelfAttention(in_feathers, in_feathers, loops=loops)
         self.MSANorm = nn.LayerNorm(in_feathers)
         self.FFN = kkl.KkFFNLayer(in_feathers, in_feathers)
         self.FFNNorm = nn.LayerNorm(in_feathers)
@@ -37,9 +37,9 @@ class KkTransformerDecode(kkb.KkModule):
     def __init__(self, in_feathers: int,
                  head_feathers: int = 128, head_size: int = 6, loops: int = 6):
         super(KkTransformerDecode, self).__init__()
-        self.MSA = kksa.KkMultiSelfAttation(in_feathers, in_feathers, loops=loops)
+        self.MSA = kksa.KkMultiSelfAttention(in_feathers, in_feathers, loops=loops)
         self.MSANorm = nn.LayerNorm(in_feathers)
-        self.MSA2 = kksa.KkMultiSelfAttation(in_feathers, in_feathers, loops=loops)
+        self.MSA2 = kksa.KkMultiSelfAttention(in_feathers, in_feathers, loops=loops)
         self.MSA2Norm = nn.LayerNorm(in_feathers)
         self.FFN = kkl.KkFFNLayer(in_feathers, in_feathers)
         self.FFNNorm = nn.LayerNorm(in_feathers)
