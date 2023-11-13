@@ -660,7 +660,7 @@ class KkTrain(KkApp):
                         _scatter_list = _scatter_list.to(config.device)
                     else:
                         _scatter_list = None
-                    out_tensor = torch.tensor(0, dtype=torch.int32)
+                    out_tensor = torch.tensor(0, dtype=torch.int32, device=config.device)
                     dist.scatter(out_tensor, _scatter_list, src=0)
                     print("\n\n  >> KkTrain.train << Rank {} : dist.scatter OUT : {}"
                           .format(config.rank, out_tensor))
