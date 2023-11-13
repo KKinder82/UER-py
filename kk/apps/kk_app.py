@@ -641,9 +641,9 @@ class KkTrain(KkApp):
                 else:
                     if config.rank == 0:
                         # 一个epoch 结束 进行全局归约
-                        for param in self.model.parameters():
-                            dist.all_reduce(param.data, op=dist.reduce_op.SUM)
-                            param.data /= dist.get_world_size()
+                        # for param in self.model.parameters():
+                        #     dist.all_reduce(param.data, op=dist.reduce_op.SUM)
+                        #     param.data /= dist.get_world_size()
 
                         # 进行验证
                         config.sys_training = False
@@ -656,8 +656,11 @@ class KkTrain(KkApp):
                             print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
                                   .format(config.rank))
                             self._device_uninit()
-                            # dist.barrier()
+                            dist.barrier()
                             return
+                        else:
+                            dist.barrier()
+
                     else:
                         dist.barrier()
                         print("\n\n  >> KkTrain.train << Rank {} : barrier通过。"
