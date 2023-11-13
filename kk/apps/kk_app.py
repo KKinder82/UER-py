@@ -651,21 +651,20 @@ class KkTrain(KkApp):
                             self.sampler_val.set_epoch(iepoch)
                         val_loss = self._val(iepoch)
                         self._model_save(iepoch=iepoch, loss=val_loss)
+                        _status = torch.tensor(0, dtype=torch.int32)
                         if val_loss[0] < config.stop_train_loss:
                             print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
                                   .format(config.rank))
-                            self._device_uninit()
-                            # dist.barrier()
-                            return
-                        else:
-                            dist.barrier()
-                            print("\n\n  >> KkTrain.train << Rank {} : barrier通过。"
-                                  .format(config.rank))
-
+                            _status = 1
+                        _scatter_list = [_status for _ in range(config.world_size)]
                     else:
-                        dist.barrier()
-                        print("\n\n  >> KkTrain.train << Rank {} : barrier通过。"
-                              .format(config.rank))
+                        _scatter_list = None
+                    out_tensor = torch.zeros(0)
+                    dist.scatter(out_tensor, _scatter_list, src=0)
+                    print("\n\n  >> KkTrain.train << Rank {} : dist.scatter OUT : {}"
+                          .format(config.rank, out_tensor))
+                    if out_tensor.item() == 1:
+                        return
         finally:
             self._device_uninit()
 
