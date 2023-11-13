@@ -479,11 +479,10 @@ class KkTrain(KkApp):
                                                   sampler=self.sampler, num_workers=config.num_workers,
                                                   pin_memory=config.pin_memory)
 
-                self.sampler_val = dist_data.DistributedSampler(self.dataset_val, rank=config.rank,
-                                                                shuffle=False)
+                self.sampler_val = KkSampler(self.dataset_val)
                 self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=config.batch_size,
                                                       shuffle=False,
-                                                      sampler=self.sampler_val, num_workers=config.num_workers,
+                                                      sampler=self.sampler_val, num_workers=0,
                                                       pin_memory=config.pin_memory)
                 need_dataloader_init = False
 
