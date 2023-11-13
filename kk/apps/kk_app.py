@@ -652,7 +652,7 @@ class KkTrain(KkApp):
                         val_loss = self._val(iepoch)
                         self._model_save(iepoch=iepoch, loss=val_loss)
                         if val_loss[0] < config.stop_train_loss:
-                            print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
+                            print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。\n\n"
                                   .format(config.rank))
                             _status = torch.tensor(1, dtype=torch.int32, device=config.device)
                         else:
@@ -662,8 +662,7 @@ class KkTrain(KkApp):
                         _scatter_list = None
                     out_tensor = torch.tensor(0, dtype=torch.int32, device=config.device)
                     dist.scatter(out_tensor, _scatter_list, src=0)
-                    print("\n\n  >> KkTrain.train << Rank {} : dist.scatter OUT : {}"
-                          .format(config.rank, out_tensor))
+
                     if out_tensor.item() == 1:
                         return
         finally:
