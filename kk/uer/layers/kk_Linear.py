@@ -10,72 +10,73 @@ import kk.uer.layers.kk_Normalization as kkn
 import math
 import copy
 
-
-class KkLinear(kkb.KkModule):
-    def __init__(self, in_feathers: int, out_feather: int,
-                 *,
-                 tradition: bool = False,
-                 init_std: (str, float) = "normal",
-                 normalization: str = "none"):
-        super(KkLinear, self).__init__()
-        self.tradition = tradition
-        if self.tradition:
-            self.Linear = nn.Linear(in_feathers, out_feather, bias=True)
-            kkb.init_weights(self.Linear, std=init_std)
-        else:
-            inner_feather = math.ceil(100 / in_feathers)
-            # perc_weights = torch.randn(in_feathers, inner_feather, dtype=torch.float32) * 10
-            perc_weights = kkb.get_randn_parameter(in_feathers, inner_feather, std="kk")
-            self.register_buffer("perc_weights", perc_weights)
-
-            self.Linear = nn.Linear(inner_feather, out_feather, bias=True)
-            kkb.init_weights(self.Linear, std=init_std)
-
-        self.Norm = kkn.get_normalization(normalization)
-
-    def forward(self, x):
-        o = torch.matmul(x, self.perc_weights)
-        o = self.Linear(o)
-        if self.Norm is not None:
-            o = self.Norm(o)
-        return o
-
-
+#
 # class KkLinear(kkb.KkModule):
-#     def __init__(self, config: kkc.KkmConfig, in_feathers: int, out_feather: int,
+#     def __init__(self, in_feathers: int, out_feather: int,
 #                  *,
 #                  tradition: bool = False,
 #                  init_std: (str, float) = "normal",
 #                  normalization: str = "none"):
-#         super(KkLinear, self).__init__(config)
+#         super(KkLinear, self).__init__()
 #         self.tradition = tradition
 #         if self.tradition:
-#             weight = kkb.get_randn_parameter(in_feathers, out_feather, std=init_std)
-#             self.weight = nn.Parameter(weight)
-#             bias = kkb.get_randn_parameter(1, out_feather, std=init_std)
-#             self.bias = nn.Parameter(bias)
+#             self.Linear = nn.Linear(in_feathers, out_feather, bias=True)
+#             kkb.init_weights(self.Linear, std=init_std)
 #         else:
 #             inner_feather = math.ceil(100 / in_feathers)
 #             # perc_weights = torch.randn(in_feathers, inner_feather, dtype=torch.float32) * 10
 #             perc_weights = kkb.get_randn_parameter(in_feathers, inner_feather, std="kk")
 #             self.register_buffer("perc_weights", perc_weights)
 #
-#             weight = kkb.get_randn_parameter(inner_feather, out_feather, std=init_std)
-#             self.weight = nn.Parameter(weight)
-#             bias = kkb.get_randn_parameter(1, out_feather, std=init_std)
-#             self.bias = nn.Parameter(bias)
+#             self.Linear = nn.Linear(inner_feather, out_feather, bias=True)
+#             kkb.init_weights(self.Linear, std=init_std)
 #
-#         self.Norm = kkn.get_normalization(config, normalization)
+#         self.Norm = kkn.get_normalization(normalization)
 #
 #     def forward(self, x):
-#         if self.tradition:
-#             o = torch.matmul(x, self.weight) + self.bias
-#         else:
-#             o = torch.matmul(x, self.perc_weights)
-#             o = torch.matmul(o, self.weight) + self.bias
-#             if self.Norm is not None:
-#                 o = self.Norm(o)
+#         o = torch.matmul(x, self.perc_weights)
+#         o = self.Linear(o)
+#         if self.Norm is not None:
+#             o = self.Norm(o)
 #         return o
+#
+
+class KkLinear(kkb.KkModule):
+    def __init__(self, config: kkc.KkmConfig, in_feathers: int, out_feather: int,
+                 *,
+                 tradition: bool = False,
+                 init_std: (str, float) = "normal",
+                 normalization: str = "none"):
+        super(KkLinear, self).__init__(config)
+        self.tradition = tradition
+        if self.tradition:
+            weight = kkb.get_randn_parameter(in_feathers, out_feather, std=init_std)
+            self.weight = nn.Parameter(weight)
+            bias = kkb.get_randn_parameter(1, out_feather, std=init_std)
+            self.bias = nn.Parameter(bias)
+        else:
+            inner_feather = math.ceil(100 / in_feathers)
+            # perc_weights = torch.randn(in_feathers, inner_feather, dtype=torch.float32) * 10
+            perc_weights = kkb.get_randn_parameter(in_feathers, inner_feather, std="kk")
+            self.register_buffer("perc_weights", perc_weights)
+
+            weight = kkb.get_randn_parameter(inner_feather, out_feather, std=init_std)
+            self.weight = nn.Parameter(weight)
+            bias = kkb.get_randn_parameter(1, out_feather, std=init_std)
+            self.bias = nn.Parameter(bias)
+
+        self.Norm = kkn.get_normalization(config, normalization)
+
+    def forward(self, x):
+        if self.tradition:
+            o = torch.matmul(x, self.weight) + self.bias
+        else:
+            o = torch.matmul(x, self.perc_weights)
+            o = torch.matmul(o, self.weight) + self.bias
+            if self.Norm is not None:
+                o = self.Norm(o)
+        return o
+
 
 #
 # class KkLinear(kkb.KkModule):
