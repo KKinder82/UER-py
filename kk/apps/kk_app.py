@@ -639,9 +639,6 @@ class KkTrain(KkApp):
                               .format(config.rank))
                         return
                 else:
-                    dist.barrier()
-                    print("\n\n  >> KkTrain.train << Rank {} : 第一barrier通过。"
-                          .format(config.rank))
                     if config.rank == 0:
                         # 一个epoch 结束 进行全局归约
                         for param in self.model.parameters():
@@ -659,10 +656,12 @@ class KkTrain(KkApp):
                             print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
                                   .format(config.rank))
                             self._device_uninit()
-                            dist.barrier()
+                            # dist.barrier()
                             return
                     else:
                         dist.barrier()
+                        print("\n\n  >> KkTrain.train << Rank {} : barrier通过。"
+                              .format(config.rank))
         finally:
             self._device_uninit()
 
