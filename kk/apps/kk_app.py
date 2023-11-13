@@ -640,6 +640,8 @@ class KkTrain(KkApp):
                         return
                 else:
                     dist.barrier()
+                    print("\n\n  >> KkTrain.train << Rank {} : 第一barrier通过。"
+                          .format(config.rank))
                     if config.rank == 0:
                         # 一个epoch 结束 进行全局归约
                         for param in self.model.parameters():
