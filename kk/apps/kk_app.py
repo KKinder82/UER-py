@@ -659,11 +659,11 @@ class KkTrain(KkApp):
                         _scatter_list = [_status for _ in range(config.world_size)]
                     else:
                         _scatter_list = None
-                    out_tensor = torch.zeros(1)
+                    out_tensor = torch.tensor(0, dtype=torch.int32)
                     dist.scatter(out_tensor, _scatter_list, src=0)
                     print("\n\n  >> KkTrain.train << Rank {} : dist.scatter OUT : {}"
                           .format(config.rank, out_tensor))
-                    if out_tensor[0].item() == 1:
+                    if out_tensor.item() == 1:
                         return
         finally:
             self._device_uninit()
