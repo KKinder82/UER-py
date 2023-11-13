@@ -655,7 +655,7 @@ class KkTrain(KkApp):
                             print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
                                   .format(config.rank))
                             self._device_uninit()
-                            dist.barrier()
+                            # dist.barrier()
                             return
                         else:
                             dist.barrier()
