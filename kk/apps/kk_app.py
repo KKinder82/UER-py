@@ -324,8 +324,6 @@ class KkTrain(KkApp):
         self.sampler_val = None
         self.dataLoader_val = None
         self.loss_fn = loss_fn
-        self.val_loss = None
-        self.val_perc = None
         if optim is None:
             self.optim = torch.optim.Adam(model.parameters(), lr=0.001)
         else:
@@ -530,12 +528,12 @@ class KkTrain(KkApp):
         # 显示结果
         _loss_sign = "(*)"
         _perc_sign = "(*)"
-        if self.val_loss is not None:
-            _loss_diff = self.val_loss - val_loss
+        if self.last_loss[0] is not None:
+            _loss_diff = self.last_loss[0] - val_loss
             _loss_sign = "(-" if _loss_diff > 0 else "(+"
             _loss_sign += str(abs(_loss_diff)) + ")"
 
-            _perc_diff = self.val_perc - val_perc
+            _perc_diff = self.last_loss[1] - val_perc
             _perc_sign = "(-" if _perc_diff > 0 else "(+"
             _perc_sign += str(abs(_perc_diff)) + "%)"
 
@@ -546,8 +544,6 @@ class KkTrain(KkApp):
         print("        val_perc {:<22} : {}%"
               .format(_perc_sign, val_perc))
 
-        self.val_loss = val_loss
-        self.val_perc = val_perc
         return val_loss, val_perc
 
     def _val_batch(self, *, iepoch, ibatch, x, y):
