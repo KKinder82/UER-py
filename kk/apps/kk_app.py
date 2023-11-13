@@ -630,10 +630,10 @@ class KkTrain(KkApp):
                     self.sampler_val.set_epoch(iepoch)
                 val_loss, val_perc = self._val(iepoch)
                 if val_loss < self.config.stop_train_loss:
-                    print("  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。".format(self.config.rank))
+                    print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。".format(self.config.rank))
                     break
-            if self.config.world_size > 1:
-                dist.barrier()
+            # if self.config.world_size > 1:
+                # dist.barrier()
                 # 在训练结束时进行全局归约
                 # if self.config.rank == 0:
                 #     for param in self.model.parameters():
