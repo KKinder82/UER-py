@@ -46,6 +46,6 @@ class KkTestTransformModel(kka.KkAppModel):
         self.Linear = kkl.KkLinear(in_feathers=in_feathers, out_feather=1)
 
     def forward(self, x):
-        o = self.net(x, x, x)
+        o = self.net(x, x)
         o = self.Linear(o)
         return o
