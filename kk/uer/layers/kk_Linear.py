@@ -42,12 +42,12 @@ import copy
 #
 
 class KkLinear(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, in_feathers: int, out_feather: int,
+    def __init__(self, in_feathers: int, out_feather: int,
                  *,
                  tradition: bool = False,
                  init_std: (str, float) = "normal",
                  normalization: str = "none"):
-        super(KkLinear, self).__init__(config)
+        super(KkLinear, self).__init__()
         self.tradition = tradition
         if self.tradition:
             weight = kkb.get_randn_parameter(in_feathers, out_feather, std=init_std)
@@ -65,7 +65,7 @@ class KkLinear(kkb.KkModule):
             bias = kkb.get_randn_parameter(1, out_feather, std=init_std)
             self.bias = nn.Parameter(bias)
 
-        self.Norm = kkn.get_normalization(config, normalization)
+        self.Norm = kkn.get_normalization(normalization)
 
     def forward(self, x):
         if self.tradition:
