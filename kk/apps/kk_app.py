@@ -659,6 +659,8 @@ class KkTrain(KkApp):
                             return
                         else:
                             dist.barrier()
+                            print("\n\n  >> KkTrain.train << Rank {} : barrier通过。"
+                                  .format(config.rank))
 
                     else:
                         dist.barrier()
