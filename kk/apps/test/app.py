@@ -74,6 +74,7 @@ def test_transforms():
                           loss_fn=loss_fn, optim=optim)
     trainer.train()
 
+
 if __name__ == "__main__":
     test_transforms()
 

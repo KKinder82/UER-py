@@ -499,13 +499,14 @@ class KkTrain(KkApp):
             self.sampler = KkSampler(self.dataset)
             # self.dataLoader = data.DataLoader(self.dataset, batch_size=config.batch_size,
             #                                   shuffle=False, num_workers=0)
-            self.dataLoader = data.DataLoader(self.dataset, batch_size=2, shuffle=False, num_workers=0,
-                                              pin_memory=config.pin_memory, sampler=self.sampler)
+            self.dataLoader = data.DataLoader(self.dataset, batch_size=config.batch_size,
+                                              shuffle=False, num_workers=0,
+                                              sampler=self.sampler, pin_memory=config.pin_memory)
 
             self.sampler_val = KkSampler(self.dataset_val)
             self.dataLoader_val = data.DataLoader(self.dataset_val, batch_size=config.batch_size,
-                                                  shuffle=False, sampler=self.sampler_val, num_workers=0,
-                                                  pin_memory=config.pin_memory)
+                                                  shuffle=False, num_workers=0,
+                                                  sampler=self.sampler_val, pin_memory=config.pin_memory)
 
     def _val(self, iepoch: int):
         config = kkc.KkmConfig.config

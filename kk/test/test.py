@@ -41,6 +41,11 @@ def kk_gen():
 
 
 def main():
+    a = torch.arange(6)
+    print(a[0:-2])
+    print(a[-2:])
+    exit(0)
+
 
     a = (1, 2, "aaa")
     print(len(a))
