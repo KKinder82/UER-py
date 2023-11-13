@@ -651,7 +651,7 @@ class KkTrain(KkApp):
                             self.sampler_val.set_epoch(iepoch)
                         val_loss = self._val(iepoch)
                         self._model_save(iepoch=iepoch, loss=val_loss)
-                        _status = torch.tensor(0, dtype=torch.int32)
+                        _status = torch.tensor(0, dtype=torch.int32, device=config.device)
                         if val_loss[0] < config.stop_train_loss:
                             print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
                                   .format(config.rank))
