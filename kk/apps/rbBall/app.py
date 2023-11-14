@@ -61,6 +61,7 @@ def infer():
     x = _date_onehot(infer_date)
     x = x.float().to(infer_config.config.device)
     o = infer_object(x)
+    torch.top
     print(o)
 
 

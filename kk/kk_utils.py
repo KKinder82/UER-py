@@ -5,6 +5,14 @@ import datetime
 import time
 
 
+def kk_num101(num_, p1_, p0, p1):
+    if num_ < 0:
+        return p1_
+    if num_ == 0:
+        return p0
+    return p1
+
+
 def kk_env_int(name: str, default=0):
     if name in os.environ:
         return int(os.environ[name])

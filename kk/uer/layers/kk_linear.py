@@ -148,13 +148,13 @@ class KkClassifierLayer(kkb.KkModule):
 
 
 class KkExtendlayer(kkb.KkModule):
-    def __init__(self, in_feathers, extend_feather: int, *, norm: bool = False):
+    def __init__(self, in_feathers, extend_feather: int, *, norm: bool = True):
         super(KkExtendlayer, self).__init__()
         self.norm = norm
         self.Linear = nn.Linear(in_feathers, in_feathers * extend_feather,
                                 bias=False if norm else True)
         if self.norm:
-            self.Norm = nn.LayerNorm(in_feathers * extend_feather)
+            self.Norm = kkn.get_normalization("instance")
 
     def forward(self, x):
         o = self.Linear(x)

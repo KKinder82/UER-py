@@ -91,12 +91,109 @@ class KkExtendLoss(KkLoss):  # 回归损失
             prec = prec.item()
         return loss, 0, prec
 
+class KkLossLog(object):
+
+    class kk_loss_item(object):
+        def __init__(self):
+            self.loss = 0
+            self.perc = 0
+            self.best = None  # 根据 loss 计算的最佳值
+            self.times = 0
+
+        def to_tuple(self):
+            return self.loss, self.perc, self.best
+
+        def to_tuple2(self):
+            return self.loss, self.perc
+
+        def update(self, loss, perc):
+            self.loss = loss
+            self.perc = perc
+            if self.best is None:
+                self.best = loss
+                return True
+            else:
+                if self.best > loss:
+                    self.best = loss
+                    return True
+            return False
+
+        def update_kkloss(self, kkloss):
+            return self.update(kkloss.loss, kkloss.perc)
+
+        def replace(self, loss, perc):
+            self.loss = loss
+            self.perc = perc
+            self.best = loss
+            self.times = 1
+
+        def replace_kkloss(self, kkloss):
+            return self.replace(kkloss.loss, kkloss.perc)
+
+
+        def add(self, loss, perc):
+            self.loss = (self.times / (self.times + 1)) * self.loss + loss / (self.times + 1)
+            self.perc = (self.times / (self.times + 1)) * self.perc + perc / (self.times + 1)
+            if self.best is None:
+                self.best = loss
+            else:
+                if self.best > loss:
+                    self.best = loss
+            self.times += 1
+
+        def reset(self):
+            self.loss = 0
+            self.perc = 0
+            self.best = None
+            self.times = 0
+
+        def compare(self, kkloss):
+            loss1 = self.loss
+            perc1 = self.perc
+
+            loss2 = kkloss.loss
+            perc2 = kkloss.perc
+
+            if loss1 == 0:
+                _loss_diff = loss2 - loss1
+                _loss_p_text = f"*                       "
+            else:
+                _loss_diff = loss2 - loss1
+                _loss_p = _loss_diff / loss1 * 100
+                _loss_text = kku.kk_num101(_loss_diff, "-", "*", "+")
+                _loss_p = abs(_loss_p)
+                _loss_p_text = f"{_loss_text} {_loss_p:>22}%"
+
+            if perc1 == 0:
+                _perc_diff = perc2 - perc1
+                _perc_p_text = f"*                       "
+            else:
+                _perc_diff = perc2 - perc1
+                _perc_p = _perc_diff / perc1 * 100
+                _perc_text = kku.kk_num101(_perc_diff, "-", "*", "+")
+                _perc_p = abs(_perc_p)
+                _perc_p_text = f"{_perc_text} {_perc_p:>22}%"
+
+            return _loss_diff, _perc_diff, _loss_p_text, _perc_p_text
+
+    def __init__(self):
+        self.train_loss = KkLossLog.kk_loss_item()
+        self.train_loss_last = KkLossLog.kk_loss_item()
+        self.train_loss_this = KkLossLog.kk_loss_item()
+        self.val_loss = KkLossLog.kk_loss_item()
+        self.val_loss_last = KkLossLog.kk_loss_item()
+        self.val_loss_this = KkLossLog.kk_loss_item()
+
+    def is_best(self):
+        return self.val_loss_this.loss < self.val_loss_last.best
+
 
 class KkApp(object):
+
     def __init__(self, model):
         super(KkApp, self).__init__()
         self.model_src = model
-        self.last_loss = (None, None)
+        self.loss = KkLossLog()
         self.model_loaded = False
         self.device_inited = False
         # 加载参数文件
@@ -157,12 +254,12 @@ class KkApp(object):
                         print(_load_obj[1])
                         if _load_obj[0] == "model":
                             self.model_src = _load_obj[2]
-                            self.last_loss = _load_obj[1]
+                            self.loss.val_loss_this.update(*_load_obj[1])
                             self.model_loaded = True
                             return True
                         elif _load_obj[0] == "dict":
                             self.model_src.load_state_dict(_load_obj[2])
-                            self.last_loss = _load_obj[1]
+                            self.loss.val_loss_this.update(*_load_obj[1])
                             self.model_loaded = True
                             return True
                         else:
@@ -173,13 +270,13 @@ class KkApp(object):
                     pass
                 raise Exception("  >> KkmConfig << KkmConfig.pt 参数文件格式错误。")
 
-    def _model_save(self, *, iepoch, loss, is_force: bool = False):
+    def _model_save(self, *, iepoch, is_force: bool = False):
         config = kkc.KkmConfig.config
         if config.rank != 0:
             # 只在 rank = 0 的进程保存模型参数
             return False
 
-        loss_tuple = loss
+        loss_tuple = self.loss.val_loss.loss, self.loss.val_loss.perc
 
         def _save(best_only: bool=False):
             _model = self.model_src
@@ -189,17 +286,15 @@ class KkApp(object):
                 _save_obj = (config.checkpoint_mode, loss_tuple, _model)
                 if not best_only:
                     torch.save(_save_obj, config.checkpoint_last)
-                if self.last_loss[0] is None or self.last_loss[0] > loss_tuple[0]:
+                if self.loss.is_best():
                     torch.save(_save_obj, config.checkpoint_best)
-                    self.last_loss = loss_tuple
                 _save_obj = None
             elif config.checkpoint_mode == "dict":
                 _save_obj = (config.checkpoint_mode, loss_tuple, _model.state_dict())
                 if not best_only:
                     torch.save(_save_obj, config.checkpoint_last)
-                if self.last_loss[0] is None or self.last_loss[0] > loss_tuple[0]:
+                if self.loss.is_best():
                     torch.save(_save_obj, config.checkpoint_best)
-                    self.last_loss = loss_tuple
                 _save_obj = None
             else:
                 raise Exception(" KkmConfig 配置文件中的 checkpoint_mode 配置错误。")
@@ -525,48 +620,30 @@ class KkTrain(KkApp):
 
     def _val(self, iepoch: int):
         config = kkc.KkmConfig.config
-        val_loss = 0
-        val_perc = 0
+        self.loss.val_loss.reset()
         for ibatch, (x, y) in enumerate(self.dataLoader_val):
             x = x.to(config.device)
             y = y.to(config.device)
             loss, _perc = self._val_batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
             # print("  >> val{} : loss {}".format(ibatch + 1, loss))
-            if ibatch == 0:
-                val_loss = loss
-                val_perc = _perc
-            else:
-                # val_loss = val_loss * iepoch / (iepoch + 1) + loss / (iepoch + 1)
-                val_loss = val_loss + (loss - val_loss) / (ibatch + 1)
-                val_perc = val_perc + (_perc - val_perc) / (ibatch + 1)
-
+            self.loss.val_loss.add(loss, _perc)
+        self.loss.val_loss_this.replace_kkloss(self.loss.val_loss)
         # 显示结果
-        _loss_sign = "(*)"
-        _perc_sign = "(*)"
-        if self.last_loss[0] is not None:
-            _loss_diff = self.last_loss[0] - val_loss
-            _loss_sign = "(-" if _loss_diff > 0 else "(+"
-            _loss_sign += str(abs(_loss_diff)) + ")"
 
-            _perc_diff = self.last_loss[1] - val_perc
-            _perc_sign = "(-" if _perc_diff > 0 else "(+"
-            _perc_sign += str(abs(_perc_diff)) + "%)"
+        _loss = self.loss.val_loss_last.compare(self.loss.val_loss_this)
+        self.loss.val_loss_last.update(*self.loss.val_loss.to_tuple2())
 
         print("\n  >> 验证信息: RANK:{}/{}, epoch {}/{} "
-               .format(config.rank + 1, config.gpu_count, iepoch + 1, config.epoch))
-        print("        val_loss {:<22} : {}"
-              .format(_loss_sign, val_loss))
-        print("        val_perc {:<22} : {}%"
-              .format(_perc_sign, val_perc))
-
-        return val_loss, val_perc
+              .format(config.rank + 1, config.gpu_count, iepoch + 1, config.epoch))
+        print("        val_loss ( {:<22} ) : {}".format(_loss[2], self.loss.val_loss.loss))
+        print("        val_perc ( {:<22} ) : {}%".format(_loss[3], self.loss.val_loss.perc))
 
     def _val_batch(self, *, iepoch, ibatch, x, y):
         with torch.no_grad():
             o = self.model(x)
             loss, _perc = self._loss(o, y)
             # loss.backward()
-            return round(loss.item(), 2), _perc
+        return loss, _perc
 
     def _batch(self, *, iepoch, ibatch, x, y):
         if hasattr(self.model, "before_forward"):
@@ -584,23 +661,39 @@ class KkTrain(KkApp):
         if hasattr(self.model_src, "epoch_reset"):
             self.model_src.epoch_reset(iepoch=iepoch)
         if config.use_layer_optim and config.use_layer_optim_by_batch:
-            for ibatch, (x, y) in enumerate(self.dataLoader):
+            _bar = tqdm.tqdm(enumerate(self.dataLoader))
+            for ibatch, (x, y) in _bar:
                 x = x.to(config.device)
                 y = y.to(config.device)
                 config.sys_ibatch = ibatch
                 self._layer_optim(batch_epoch=True)
                 loss = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
-                self._optim(ibatch=ibatch, loss=loss)
+                loss, _perc = self._optim(ibatch=ibatch, loss=loss)
+                self.loss.train_loss_this.update(loss, _perc)
+                diff_loss = self.loss.train_loss_last.compare(self.loss.train_loss_this)
+                self.loss.train_loss_last.update(*self.loss.train_loss_this.to_tuple2())
+                _msg = (" >> Train <<  loss( {} ) : {:>26} | perc( {} ) : {:>26}%"
+                        .format(diff_loss[2], self.loss.train_loss_this.loss, diff_loss[3],
+                                self.loss.train_loss_this.perc))
+                _bar.set_description(_msg)
         else:
             need_optim = False
-            for ibatch, (x, y) in enumerate(self.dataLoader):
+            diff_loss = (0, 0, "*", "*")
+            _bar = tqdm.tqdm(enumerate(self.dataLoader))
+            for ibatch, (x, y) in _bar:
                 x = x.to(config.device)
                 y = y.to(config.device)
                 # 按层优化
                 config.sys_ibatch = ibatch
-                loss = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
-                # print("  >> Epoch {}/{}, batch {}/{}, rank:{}, loss:{}".format(iepoch, config.epoch,
-                #                                              ibatch, len(self.dataLoader), config.rank, loss))
+                loss, _perc = self._batch(iepoch=iepoch, ibatch=ibatch, x=x, y=y)
+                self.loss.train_loss_this.update(loss, _perc)
+                diff_loss = self.loss.train_loss_last.compare(self.loss.train_loss_this)
+                self.loss.train_loss_last.update(*self.loss.train_loss_this.to_tuple2())
+                _msg = (" >> Train <<  loss( {} ) : {} | perc( {} ) : {}%"
+                        .format(diff_loss[2], self.loss.train_loss_this.loss,
+                                diff_loss[3], self.loss.train_loss_this.perc))
+                _bar.set_description(_msg)
+
                 need_optim = True
                 if ibatch % config.accumulation_steps == 0:
                     self._optim(ibatch=ibatch, loss=loss)
@@ -625,8 +718,8 @@ class KkTrain(KkApp):
                                  config.batch_count, config.world_size))
                 _loss_sign = "(*)"
                 print("          loss : {0:<26}  |   perc : {1:<26}"
-                      .format(("(*)" if self.last_loss[0] is None else self.last_loss[0]),
-                              ("(*)" if self.last_loss[1] is None else self.last_loss[1])))
+                      .format(("(*)" if self.loss.val_loss_this.times == 0 else self.loss.val_loss_this.loss),
+                              ("(*)" if self.loss.val_loss_this.times == 0 else self.loss.val_loss_this.perc)))
 
             for iepoch in range(config.epoch):
                 print("\n|------ [ Epoch ] : {} / {}  |  rank : {}  |  world_size : {} -----------------------------"
@@ -650,8 +743,8 @@ class KkTrain(KkApp):
                     if isinstance(self.sampler_val, dist_data.DistributedSampler):
                         self.sampler_val.set_epoch(iepoch)
                     val_loss = self._val(iepoch)
-                    self._model_save(iepoch=iepoch, loss=val_loss)
-                    if val_loss[0] < config.stop_train_loss:
+                    self._model_save(iepoch=iepoch)
+                    if self.loss.val_loss_this.loss < config.stop_train_loss:
                         print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。"
                               .format(config.rank))
                         return
@@ -667,9 +760,9 @@ class KkTrain(KkApp):
                         self.model.eval()
                         if isinstance(self.sampler_val, dist_data.DistributedSampler):
                             self.sampler_val.set_epoch(iepoch)
-                        val_loss = self._val(iepoch)
-                        self._model_save(iepoch=iepoch, loss=val_loss)
-                        if val_loss[0] < config.stop_train_loss:
+                        self._val(iepoch)
+                        self._model_save(iepoch=iepoch)
+                        if self.loss.val_loss_this.loss < config.stop_train_loss:
                             print("\n\n  >> KkTrain.train << Rank {} : 当前预测精度已满足系统设计要求，训练结束。\n\n"
                                   .format(config.rank))
                             _status = torch.tensor(1, dtype=torch.int32, device=config.device)
