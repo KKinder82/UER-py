@@ -60,11 +60,11 @@ class KkClassfierLoss(KkLoss):
         _last = 0
         for i in range(len(self.counts) - 1):
             _max, _index = torch.topk(o[..., _last:self.blocks[i]], self.counts[i], dim=-1)
-            kku.tensor_fill(o_y[..., _last:self.blocks[i]], _index, 1)
+            kku.kk_tensor_fill(o_y[..., _last:self.blocks[i]], _index, 1)
             _last += self.blocks[i]
         if _last < y.size(-1):
             _max, _index = torch.topk(o[..., _last:], self.counts[-1], dim=-1)
-            kku.tensor_fill(o_y[..., _last:], _index, 1)
+            kku.kk_tensor_fill(o_y[..., _last:], _index, 1)
         _f = (o_y - y) != 0
         if self.diffOnly:
             loss = self.lossFn(o[_f], y[_f])
@@ -97,10 +97,14 @@ class KkApp(object):
         super(KkApp, self).__init__()
         self.model_src = model
         self.last_loss = (None, None)
+        self.model_loaded = False
+        self.device_inited = False
         # 加载参数文件
         self._model_load()
 
     def _device_init(self):
+        if self.device_inited:
+            return
         config = kkc.KkmConfig.config
         if config.device == "cuda":
             if config.world_size > 1:
@@ -126,6 +130,7 @@ class KkApp(object):
             print("  >> KkApp._device_init << Pytorch:CPU 初始化 ")
             # self.model_src.to(config.device)
             self.model = self.model_src  # .to(config.device)
+        self.device_inited = True
 
     def _device_uninit(self):
         config = kkc.KkmConfig.config
@@ -136,12 +141,14 @@ class KkApp(object):
                 torch.cuda.empty_cache()
             elif config.device == "cuda":
                 torch.cuda.empty_cache()
+        self.device_inited = False
 
     def _model_load(self):
         config = kkc.KkmConfig.config
         if config.pt_load:
             if not os.path.exists(config.pt):
                 print("  >> KkmConfig << 找不到 KkmConfig中，pt 参数文件{}。".format(config.pt))
+                return False
             else:
                 print("  >> KkmConfig << 加载模型参数文件：{} ... ".format(config.pt))
                 _load_obj = torch.load(config.pt)
@@ -151,10 +158,12 @@ class KkApp(object):
                         if _load_obj[0] == "model":
                             self.model_src = _load_obj[2]
                             self.last_loss = _load_obj[1]
+                            self.model_loaded = True
                             return True
                         elif _load_obj[0] == "dict":
                             self.model_src.load_state_dict(_load_obj[2])
                             self.last_loss = _load_obj[1]
+                            self.model_loaded = True
                             return True
                         else:
                             pass
@@ -205,27 +214,30 @@ class KkApp(object):
 
 
 class KkInference(KkApp):
-    def __init__(self, config: kkc.KkmConfig, model):
-        super(KkInference, self).__init__(config, model)
+    def __init__(self, model):
+        super(KkInference, self).__init__(model)
+        self.model = self.model_src
 
-    def forward(self, datas):
+    def __call__(self, x):
+        return self.infer(x)
+
+    def infer(self, x):
         config = kkc.KkmConfig.config
+        if not self.model_loaded:
+            print(" >> 模型未加载，无法推理。")
+            return torch.tensor([])
+
         # 模型处理
+        kkc.KkmConfig.config.world_size = 1
         self._device_init()
-        with torch.no_grad():
-            datas = datas.view(-1, datas.size(-1))
-            batch = math.ceil(datas.size(0) / config.batch_size)
-            out = []
-            for ibatch in range(batch):
-                x = datas[ibatch * config.batch_size:(ibatch + 1) * config.batch_size, :]
-                if config.device == "cuda":
-                    o = self.model(x)
-                    o = o.cpu()
-                else:
-                    o = self.model(x)
-                out.append(o)
-            print(out)
-        self._device_uninit()
+        try:
+            o = self.model(x)
+            o = o.cpu()
+            return o
+        except Exception as e:
+            print(" >> 模型推理出错：", e)
+        return torch.tensor([])
+
 
 
 class KkSampler(data.Sampler):
@@ -314,7 +326,7 @@ class KkTrain(KkApp):
                  model: kkb.KkModule, dataset: KkDataset, dataset_val: KkDataset,
                  loss_fn, optim=None):
         super(KkTrain, self).__init__(model=model)
-        kkb.KkModule.model = model
+        # kkb.KkModule.model = model
         self.loss_value = 0.0
         self.gpu_count = kkc.KkmConfig.config.gpu_count
         self.dataset = dataset
@@ -355,6 +367,7 @@ class KkTrain(KkApp):
                     print("  >> KkTrain._optim <<  模型参数 {} 权重为 0 ，请确认该参数是否需要初始化。".format(ipname))
         self.optim.step()
         self.optim.zero_grad()
+        pass
 
     def _layer_optim_init(self, model):
         config = kkc.KkmConfig.config
@@ -399,8 +412,7 @@ class KkTrain(KkApp):
         config = kkc.KkmConfig.config
         model = self.model
         m_cfg = config.sys_layer_optim_models.get(model)
-        if (config.use_layer_optim
-                and (batch_epoch == config.use_layer_optim_by_batch)):
+        if (config.use_layer_optim and (batch_epoch == config.use_layer_optim_by_batch)):
             pass
         else:
             return
@@ -508,6 +520,9 @@ class KkTrain(KkApp):
                                                   shuffle=False, num_workers=0,
                                                   sampler=self.sampler_val, pin_memory=config.pin_memory)
 
+        config.data_len = len(self.dataset)
+        config.batch_count = len(self.dataLoader)
+
     def _val(self, iepoch: int):
         config = kkc.KkmConfig.config
         val_loss = 0
@@ -538,7 +553,7 @@ class KkTrain(KkApp):
             _perc_sign += str(abs(_perc_diff)) + "%)"
 
         print("\n  >> 验证信息: RANK:{}/{}, epoch {}/{} "
-               .format(config.rank, config.gpu_count, iepoch + 1, config.epoch))
+               .format(config.rank + 1, config.gpu_count, iepoch + 1, config.epoch))
         print("        val_loss {:<22} : {}"
               .format(_loss_sign, val_loss))
         print("        val_perc {:<22} : {}%"
@@ -603,9 +618,11 @@ class KkTrain(KkApp):
         try:
             # 开始训练
             if config.rank == 0:
-                print("  >> 开始训练 << epoch : {}, batch_size : {}, world_size : {}, gpu_count:{},"
-                      .format(config.epoch, config.batch_size,
-                              config.world_size, config.gpu_count))
+                # 批次 size
+                msg = ("  >> 开始训练 << epoch: {} | data_len: {} | batch_size: {} |"
+                       " batch_count: {} | world_size: {}")
+                print(msg.format(config.epoch, config.data_len, config.batch_size,
+                                 config.batch_count, config.world_size))
                 _loss_sign = "(*)"
                 print("          loss : {0:<26}  |   perc : {1:<26}"
                       .format(("(*)" if self.last_loss[0] is None else self.last_loss[0]),

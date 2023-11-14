@@ -16,23 +16,23 @@ def main():
         iyear = int(dates[0])
         imonth = int(dates[1])
         iday = int(dates[2])
-        zh_date = kkd.date_ganzhi(iyear, imonth, iday, 19, 1)
-        tdata = kku.onehot(int(zh_date[0]), 10)
-        tdata += kku.onehot(int(zh_date[1]), 12)
-        tdata += kku.onehot(int(zh_date[2]), 10)
-        tdata += kku.onehot(int(zh_date[3]), 12)
-        tdata += kku.onehot(int(zh_date[4]), 10)
-        tdata += kku.onehot(int(zh_date[5]), 12)
-        tdata += kku.onehot(int(zh_date[6]), 10)
-        tdata += kku.onehot(int(zh_date[7]), 12)
+        zh_date = kkd.kk_date_ganzhi(iyear, imonth, iday, 19, 1)
+        tdata = kku.kk_onehot(int(zh_date[0]), 10)
+        tdata += kku.kk_onehot(int(zh_date[1]), 12)
+        tdata += kku.kk_onehot(int(zh_date[2]), 10)
+        tdata += kku.kk_onehot(int(zh_date[3]), 12)
+        tdata += kku.kk_onehot(int(zh_date[4]), 10)
+        tdata += kku.kk_onehot(int(zh_date[5]), 12)
+        tdata += kku.kk_onehot(int(zh_date[6]), 10)
+        tdata += kku.kk_onehot(int(zh_date[7]), 12)
 
         # 88-120 Red 处理
-        t = kku.onehot(irow[3] - 1, 33)
+        t = kku.kk_onehot(irow[3] - 1, 33)
         for i in range(4, 9):
             t[irow[i] - 1] = 1
         tdata += t
         # 121-136 Blue 处理 (共137位)
-        tdata += kku.onehot(irow[9] - 1, 16)
+        tdata += kku.kk_onehot(irow[9] - 1, 16)
 
         # 将 irow 转为 list 对象
         # tdata += irow[3:10].tolist()

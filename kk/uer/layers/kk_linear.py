@@ -13,7 +13,7 @@ import copy
 
 class KkLinear(kkb.KkModule):
     def __init__(self, in_feathers: int, out_feathers: int, *,
-                 tradition: bool = False,
+                 tradition: bool = True,
                  init_std: (str, float) = "normal",
                  normalization: str = "none"):
         super(KkLinear, self).__init__()
@@ -33,8 +33,11 @@ class KkLinear(kkb.KkModule):
         self.Norm = kkn.get_normalization(normalization)
 
     def forward(self, x):
-        o = torch.matmul(x, self.perc_weights)
-        o = self.Linear(o)
+        if self.tradition:
+            o = self.Linear(x)
+        else:
+            o = torch.matmul(x, self.perc_weights)
+            o = self.Linear(o)
         if self.Norm is not None:
             o = self.Norm(o)
         return o

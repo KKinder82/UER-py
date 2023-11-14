@@ -16,13 +16,14 @@ class KkCrossAttention(kkb.KkModule):
         super(KkCrossAttention, self).__init__()
         self.a_feathers = content_feathers + in_feathers
         self.x_net = kkl.KkExtendlayer(self.a_feathers, inner_feathers)
-        perc_metric = kkb.get_randn_parameter(inner_feathers, inner_feathers, std="kk")
-        self.register_buffer("perc_metric", perc_metric)
-        self.o_net = kkl.KkLinear(self.a_feathers, out_length, init_std="normal")
+        # perc_metric = kkb.get_randn_parameter(inner_feathers, inner_feathers, std="kk")
+        # self.register_buffer("perc_metric", perc_metric)
+        self.o_net = kkl.KkLinear(self.a_feathers, out_length, init_std="normal", tradition=True)
 
     def forward(self, content, x):
         o = torch.concatenate((content.expand(x.size(0), -1), x), dim=-1)
         o = self.x_net(o)
-        o = o @ self.perc_metric @ o.transpose(-1, -2)
+        # o = o @ self.perc_metric @ o.transpose(-1, -2)
+        o = o @ o.transpose(-1, -2)
         o = self.o_net(o).transpose(-1, -2)
         return o

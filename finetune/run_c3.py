@@ -132,7 +132,7 @@ def read_dataset(args, path):
 
 def main():
     config_args = []
-    config_args = load_argsconfig("afinetune/run_c3.txt")
+    config_args = kk_load_argsconfig("afinetune/run_c3.txt")
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 

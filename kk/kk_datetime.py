@@ -3,29 +3,46 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import datetime
+import kk.kk_utils as kku
 
 
-# 判断是不是闰年
-def year_isleap(year):
-    if year % 400 == 0:
+# 判断是不是闰年 (400年有97个闰年（少三个年），100、200、300 不是闰年
+def kk_year_isleap(year_):
+    if year_ % 400 == 0:
         return True
-    elif year % 4 == 0 and year % 100 != 0:
+    elif year_ % 4 == 0 and year_ % 100 != 0:
         return True
     else:
         return False
 
 
-def year_month_jieqi(year, month, jie0qi1):
+# 计算立春的具体日期（到时分秒）
+def kk_year_spring(year_):
+    _is_leap = kk_year_isleap(year_)
+    _y = year_ % 100
+    t_ = 0.6236 + _y * 0.2422 - _y // 4 + (1 if _is_leap else 0)
+    print(t_)
+    _day = int(t_)
+    t_ = (t_ - _day) * 24
+    _hour = int(t_)
+    t_ = (t_ - _hour) * 60
+    _minute = int(t_)
+    t_ = (t_ - _minute) * 60
+    _second = int(t_)
+    return datetime.datetime(year_, 2, 4 + _day, _hour, _minute, _second)
+
+
+def kk_year_month_jieqi(year_, month, jie0qi1):
     jieqi = 0
     if month > 1:
         jieqi = (month-2) + jie0qi1
     else:
         jieqi = 22 + jie0qi1
-    return year_jieqi(year, jieqi)
+    return kk_year_jieqi(year_, jieqi)
 
 
-def year_jieqi(year, jieqi):
-    if (year < 1900) or (year > 2100):
+def kk_year_jieqi(year_, jieqi):
+    if (year_ < 1900) or (year_ > 2100):
         # 时间错误
         return datetime.date(1900, 1, 1)
     # 从20世纪开始，每年的立春日都是2月4日或2月5日 (20 世纪 4.15)
@@ -54,40 +71,41 @@ def year_jieqi(year, jieqi):
            [6.11, 5.4055],      # 小寒     # 1982年计算结果加1日，2019年减1日  # 7.646, 6.926
            [20.84, 20.12]]      # 大寒 23  # 2000年和2082年的计算结果加1日  21.94, 21.37
 
-    _year00R = year // 100  # 取整 year 的前 2位
-    _year00L = year % 100   # 取余 year 的后 2位
+    _year00R = year_ // 100  # 取整 year_ 的前 2位
+    _year00L = year_ % 100   # 取余 year_ 的后 2位
 
     # (Y * D + C ] - L
     _L = int(_year00L * 0.2422 + _Cs[jieqi][_year00R - 19]) - (_year00L - 1) // 4
-    if (jieqi == 1 and year == 2026) or \
-            (jieqi == 21 and (year == 1918 or year == 2021)) or \
-            (jieqi == 22 and year == 2019):
+    if (jieqi == 1 and year_ == 2026) or \
+            (jieqi == 21 and (year_ == 1918 or year_ == 2021)) or \
+            (jieqi == 22 and year_ == 2019):
         _L = _L - 1
-    elif (jieqi == 3 and year == 2084) or \
-            (jieqi == 6 and year == 1911) or \
-            (jieqi == 7 and year == 2008) or \
-            (jieqi == 8 and year == 1902) or \
-            (jieqi == 9 and year == 1928) or \
-            (jieqi == 10 and (year == 1925 or year == 2016)) or \
-            (jieqi == 11 and year == 1922) or \
-            (jieqi == 12 and year == 2002) or \
-            (jieqi == 14 and year == 1927) or \
-            (jieqi == 15 and year == 1942) or \
-            (jieqi == 17 and year == 2089) or \
-            (jieqi == 18 and year == 2089) or \
-            (jieqi == 19 and year == 1978) or \
-            (jieqi == 20 and year == 1954) or \
-            (jieqi == 22 and year == 1982) or \
-            (jieqi == 23 and (year == 2000 or year == 2082)):
+    elif (jieqi == 3 and year_ == 2084) or \
+            (jieqi == 6 and year_ == 1911) or \
+            (jieqi == 7 and year_ == 2008) or \
+            (jieqi == 8 and year_ == 1902) or \
+            (jieqi == 9 and year_ == 1928) or \
+            (jieqi == 10 and (year_ == 1925 or year_ == 2016)) or \
+            (jieqi == 11 and year_ == 1922) or \
+            (jieqi == 12 and year_ == 2002) or \
+            (jieqi == 14 and year_ == 1927) or \
+            (jieqi == 15 and year_ == 1942) or \
+            (jieqi == 17 and year_ == 2089) or \
+            (jieqi == 18 and year_ == 2089) or \
+            (jieqi == 19 and year_ == 1978) or \
+            (jieqi == 20 and year_ == 1954) or \
+            (jieqi == 22 and year_ == 1982) or \
+            (jieqi == 23 and (year_ == 2000 or year_ == 2082)):
         _L = _L + 1
 
     _M = jieqi // 2 + 2 if jieqi < 22 else 1
     # 返回一个日期值
-    _date = datetime.date(year, _M, _L)
+    _date = datetime.date(year_, _M, _L)
     return _date
 
+
 # 只能计算 1900 - 2100年之间的日期
-def date_ganzhi(year, month, day, hour, out=0):
+def kk_date_ganzhi(year_, month, day, hour, out=0):
     if out > 0:
         _gans = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
         _zhis = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
@@ -95,23 +113,22 @@ def date_ganzhi(year, month, day, hour, out=0):
         _gans = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸']
         _zhis = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥']
 
-
     # 年
-    _nian_gan = _gans[(year - 4) % 10]
-    _nian_zhi = _zhis[(year - 4) % 12]
+    _nian_gan = _gans[(year_ - 4) % 10]
+    _nian_zhi = _zhis[(year_ - 4) % 12]
 
     # 月
-    _yue_gan = _gans[((year - 4) % 5 * 12 + month) % 10]
+    _yue_gan = _gans[((year_ - 4) % 5 * 12 + month) % 10]
     # 获取当前的节，
-    date = year_month_jieqi(year, month, 0)
+    date = kk_year_month_jieqi(year_, month, 0)
     if day > date.day:
         _yue_zhi = _zhis[month - 1]
     else:
         _yue_zhi = _zhis[(month + 12 - 1 )% 12]
 
     # 日
-    year_l00 = year // 100
-    year_r00 = year % 100
+    year_l00 = year_ // 100
+    year_r00 = year_ % 100
     _day_gan_N = (year_l00 + year_r00) + year_l00 // 4 + year_r00 // 4
     _day_gan_N = _day_gan_N + ((month + 12 if month < 3 else month) + 1) * 3 // 5
     _day_gan_N = _day_gan_N + day - 3 - year_l00
@@ -121,13 +138,13 @@ def date_ganzhi(year, month, day, hour, out=0):
     # 1900——1999年 日干支基数 =（年尾二位数+3）*5+55+（年尾二位数-1）除4
     # 2000——2099年 日干支基数=（年尾二位数+7）*5+15+（年尾二位数+19）除4（只用商数，余数不用，数过60就去掉60）
     _day_gan_N = 0
-    if year < 2000:
-        _day_gan_N = (year % 100 + 3) * 5 + 55 + (year % 100 - 1) // 4
+    if year_ < 2000:
+        _day_gan_N = (year_ % 100 + 3) * 5 + 55 + (year_ % 100 - 1) // 4
     else:
-        _day_gan_N = (year % 100 + 7) * 5 + 15 + (year % 100 + 19) // 4
+        _day_gan_N = (year_ % 100 + 7) * 5 + 15 + (year_ % 100 + 19) // 4
     _day_gan_N = _day_gan_N % 60
 
-    __days = [31, 29 if year_isleap(year) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    __days = [31, 29 if kk_year_isleap(year_) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     for i in range(month - 1):
         _day_gan_N = _day_gan_N + __days[i]
     _day_gan_N = _day_gan_N + day
@@ -184,35 +201,63 @@ def date_ganzhi(year, month, day, hour, out=0):
 
 '''
 
+# 时间值 秒
+def kk_datetime(date_: (str, tuple) = None, *, out_format: (1, 2, 3, 4, 5) = 3):
+    if date_ is None:
+        date_ = datetime.datetime.now()
+    else:
+        if isinstance(date_, tuple):
+            date_ = datetime.datetime(*date_)
+        elif isinstance(date_, str):
+            i_ = kku.kk_split(date_, " -:.")
+            i_ = [int(i) for i in i_]
+            i_len =len(i_)
+            if i_len < 3:
+                i_.extend([1900, 1, 1][i_len:])
+            date_ = datetime.datetime(*i_)
+        else:
+            raise Exception("date_ type error")
 
-def date_ganzhi2(year, month, day, hour):
-    _gans = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬','癸']
-    _zhis = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未','申', '酉', '戌', '亥']
-    _shengxiao = ['鼠', '牛', '虎', '兔', '龙', '蛇','马', '羊', '猴', '鸡', '狗', '猪']
-    _yuefen = ['十一', '十二', '正', '二', '三', '四','五', '六', '七', '八', '九', '十']
-    _riqi = ['初一', '初二', '初三', '初四', '初五', '初六','初七', '初八', '初九', '初十', '十一', '十二', '十三', '十四','十五', '十六', '十七', '十八', '十九', '二十','廿一', '廿二', '廿三', '廿四', '廿五', '廿六','廿七', '廿八', '廿九', '三十']
-    _nian = year - 1900 + 36
-    _yue = month - 1
-    _ri = day - 1
-    _gan = _gans[_nian % 10]
-    _zhi = _zhis[_nian % 12]
-    _sx = _shengxiao[_nian % 12]
-    _yf = _yuefen[_yue]
-    _rq = _riqi[_ri]
+    if out_format == 1:
+        return date_.time()
+    elif out_format == 2:
+        return date_.date()
+    elif out_format == 3:
+        return date_
+    elif out_format == 4:
+        return date_.timestamp()
+    elif out_format == 5:
+        return date_.timetuple()   # 切分为 元组
 
-    # 时
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+    str_format = "%Y-%m-%d %H:%M:%S"
+    return date_.strftime(str_format)
 
 
-# Press the green button in the gutter to run the script.
+# %y %Y %m %b|Jan %B|January %d %H %I %M %S %a|Sun %A|Sunday %w|0-6
+# %p : 本地A.M.或P.M.的等价符
+# %j : 年内的一天（001-366）  %U : 一年中的星期数（00-53）星期天为星期的开始
+#                          %W : 一年中的星期数（00-53）星期一为星期的开始
+# %c : 本地相应的日期表示和时间表示
+# %x : 本地相应的日期表示
+# %X : 本地相应的时间表示
+# %Z : 当前时区的名称
+# %% : %号本身
+def kk_datetime_str(date_: (datetime.datetime, datetime.time, datetime.date) = None, *,
+                    str_format="%Y-%m-%d %H:%M:%S"):
+    if date_ is None:
+        date_ = datetime.datetime.now()
+    return date_.strftime(str_format)
+
+
 if __name__ == '__main__':
-    year = 2010
-    t = (year % 100 + 7) * 5 + 15 + (year % 100 + 19) // 4
-    print(t)
+    _data = kk_datetime("", out_format=5)
+    print(_data)
+    exit(0)
 
-    print(date_ganzhi(2023, 10, 26, 5))
+    year_ = 2010
+    o = kk_year_spring(2010)
+    print(o)
+
+    print(kk_date_ganzhi(2023, 10, 26, 5))
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

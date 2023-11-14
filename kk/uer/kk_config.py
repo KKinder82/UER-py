@@ -23,11 +23,11 @@ class KkmConfig(object):
         self.app_path = app_path if os.path.isdir(app_path) else os.path.dirname(app_path)
 
         # 分布式训练
-        self.rank = kku.env_int('RANK', 0)                   # int(os.environ['RANK'])
-        self.local_rank = kku.env_int('LOCAL_RANK', 0)       # int(os.environ['LOCAL_RANK'])
-        self.world_size = kku.env_int('WORLD_SIZE', 1)       # int(os.environ['WORLD_SIZE'])
-        self.master_addr = kku.env_value('MASTER_ADDR', "127.0.0.1")  # os.environ['MASTER_ADDR']
-        self.master_port = kku.env_value('MASTER_PORT', "16666")        # os.environ['MASTER_PORT']
+        self.rank = kku.kk_env_int('RANK', 0)                   # int(os.environ['RANK'])
+        self.local_rank = kku.kk_env_int('LOCAL_RANK', 0)       # int(os.environ['LOCAL_RANK'])
+        self.world_size = kku.kk_env_int('WORLD_SIZE', 1)       # int(os.environ['WORLD_SIZE'])
+        self.master_addr = kku.kk_env_value('MASTER_ADDR', "127.0.0.1")  # os.environ['MASTER_ADDR']
+        self.master_port = kku.kk_env_value('MASTER_PORT', "16666")        # os.environ['MASTER_PORT']
         self.master_port = "16666"
         self.backend = "nccl"
         # GPU 训练
@@ -35,7 +35,8 @@ class KkmConfig(object):
         self.gpu_count = min(torch.cuda.device_count(), self.world_size)
         # 数据集
         self.shuffle = False
-        self.batch_size = 1
+        self.data_len = 0
+        self.batch_size = 10
         self.batch_count = 0
         self.num_workers = self.world_size
         self.pin_memory = False

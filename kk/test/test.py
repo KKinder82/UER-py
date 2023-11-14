@@ -278,11 +278,11 @@ def main():
     _last = 0
     for i, iblock in enumerate(blocks):
         _max, _index = torch.topk(o[..., _last:iblock], 2, dim=-1)
-        kku.tensor_fill(o_y[..., _last:iblock], _index, 1)
+        kku.kk_tensor_fill(o_y[..., _last:iblock], _index, 1)
         _last += iblock
     if _last < y.size(-1):
         _max, _index = torch.topk(o[..., _last:], 1, dim=-1)
-        kku.tensor_fill(o_y[..., _last:], _index, 1)
+        kku.kk_tensor_fill(o_y[..., _last:], _index, 1)
     print(o_y)
     _f = (o_y - y) != 0
     loss = torch.sum(torch.pow(o[_f] - y[_f], 2))
