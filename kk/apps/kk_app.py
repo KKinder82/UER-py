@@ -847,7 +847,9 @@ class KkTrain(KkApp):
 
         print("\n  >> 验证信息: RANK:{}/{}, epoch {}/{} "
               .format(config.rank + 1, config.gpu_count, iepoch + 1, config.epoch))
-        print("        val_loss ( {} ) : {:<10g}".format(_loss[2], self.loss.val_loss_this.loss))
+        print("        val_loss ( {} ) : {:<10g} : {}".format(_loss[2],
+                                                              self.loss.val_loss_this.loss,
+                                                              self.loss.val_loss_this.best))
         print("        val_perc ( {} ) : {:<10g}%".format(_loss[3], self.loss.val_loss_this.perc))
 
     def _val_batch(self, *, iepoch, ibatch, x, y):
@@ -969,12 +971,6 @@ class KkTrain(KkApp):
                         return
                 else:
                     if config.rank == 0:
-                        # 一个epoch 结束 进行全局归约
-                        # for param in self.model.parameters():
-                        #     dist.all_reduce(param.data, op=dist.reduce_op.SUM)
-                        #     param.data /= dist.get_world_size()
-
-                        # 进行验证
                         config.sys_training = False
                         self.model.eval()
                         if isinstance(self.sampler_val, dist_data.DistributedSampler):
