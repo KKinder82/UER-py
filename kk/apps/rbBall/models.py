@@ -59,5 +59,5 @@ class RbClassfierLoss(kka.KkClassfierLoss):
         super(RbClassfierLoss, self).__init__(lossFn=lossFn, blocks=blocks, counts=counts, diffOnly=diffOnly)
 
     def f_after(self, o, y, loss):
-        loss = loss + torch.std(o) * 100.0
+        loss = loss + torch.std(o) * 10.0
         return loss
