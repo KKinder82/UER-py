@@ -14,11 +14,11 @@ import torch.utils.data.distributed as dist_data
 def train():
     _path = os.path.dirname(os.path.abspath(__file__))
     config = kkc.KkmConfig(_path)
-    config.batch_size = 2
+    config.batch_size = 1
     model = models.RBModel()
     dataset = kka.KkDataset(path_np="data/rbBall_train.npy", x_len=88)
     dataset_val = kka.KkDataset(path_np="data/rbBall_val.npy", x_len=88)
-    loss_fun = kka.KkClassfierLoss(blocks=[33], counts=[6, 1])
+    loss_fun = models.RbClassfierLoss(blocks=[33], counts=[6, 1])
     optim = torch.optim.Adam(model.parameters(), lr=0.001)
 
     trainer = kka.KkTrain(model=model, dataset=dataset, dataset_val=dataset_val,
@@ -61,8 +61,9 @@ def infer():
     x = _date_onehot(infer_date)
     x = x.float().to(infer_config.config.device)
     o = infer_object(x)
-    torch.top
-    print(o)
+    o, o_args = torch.topk(o, 6, dim=-1)
+    o_args_human = o_args + 1
+    print(o_args_human)
 
 
 def test():
@@ -87,7 +88,7 @@ def test():
 
     model = models.RBModel()
     loss_fn = kka.KkExtendLoss(lossFn=nn.MSELoss())
-    optim = torch.optim.Adam(model.parameters(), lr=0.001)
+    optim = torch.optim.Adam(model.parameters(), lr=0.1)
     trainer = kka.KkTrain(model=model, dataset=dataset, dataset_val=dataset_val,
                           loss_fn=loss_fn, optim=optim)
     trainer.train()

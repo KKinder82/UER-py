@@ -19,12 +19,17 @@ class RBModel(kka.KkAppModel):
         context = torch.zeros((1, self.c_feathers), dtype=torch.float32)
         self.register_buffer("context", context)
 
-        self.c_net = kkca.KkCrossAttention(self.c_feathers, self.in_feathers,
-                                           out_length=self.o_feathers)
-        self.classifier = kkl.KkClassifierLayer(self.a_feathers, 1, one_formal="sigmoid")
+        # self.c_net = kkca.KkCrossAttention(self.c_feathers, self.in_feathers,
+        #                                    out_length=self.o_feathers)
+        self.c_net = kksa.KkMultiSelfAttention(self.a_feathers, self.a_feathers,
+                                               head_count=98)
+        self.classifier = kkl.KkClassifierLayer(self.a_feathers, 49,
+                                                one_formal="sigmoid", inner_feathers=1024)
 
     def forward(self, x):
-        o = self.c_net(self.context, x)
+        _context = self.context.expand(x.size(0), -1)
+        o = torch.concatenate((_context, x), dim=-1)
+        o = self.c_net(o, o, o)
         o = self.classifier(o)
         o = torch.squeeze(o, dim=-1)
         return o
@@ -47,3 +52,12 @@ class RBModel(kka.KkAppModel):
         iepoch = args["iepoch"]
         self.context -= self.context  # 清空内容
         pass
+
+
+class RbClassfierLoss(kka.KkClassfierLoss):
+    def __init__(self, *, lossFn=nn.BCELoss(), blocks=[], counts=1, diffOnly=False):
+        super(RbClassfierLoss, self).__init__(lossFn=lossFn, blocks=blocks, counts=counts, diffOnly=diffOnly)
+
+    def f_after(self, o, y, loss):
+        loss = loss + torch.std(o) * 100.0
+        return loss

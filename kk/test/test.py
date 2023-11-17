@@ -38,6 +38,31 @@ def kk_gen():
 
 
 def main():
+    i = 2
+    if 0 < i < 3:
+        print("OK")
+    exit()
+
+    class tc():
+        def __init__(self):
+            self.a = "a"
+            self.b = "b"
+        def fun_a(self):
+            return 1
+    o = tc()
+    for i in o.__dict__:
+        print(i)
+    if hasattr(o, "a"):
+        print("a: OK")
+    if hasattr(o, "fun_a"):
+        print("fun_a(): OK")
+    exit(0)
+
+
+    if 1 > None:
+        print("OK")
+    exit()
+
     # concat 的用法
     x = torch.tensor([[4, 5, 6]])
     y = torch.tensor([[3, 3, 3], [5, 5, 6]])
