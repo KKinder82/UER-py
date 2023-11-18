@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import math
 import random
-import kk.uer.kk_config as kkc
+import kk.lm.kk_config as kkc
 
 
 def init_weights(model, *, mean=0.0, std: (str, float) = 0.01):

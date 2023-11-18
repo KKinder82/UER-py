@@ -1,12 +1,12 @@
 import torch
 import torch.nn as nn
-import kk.apps.kk_app as kka
-import kk.uer.kk_base as kkb
-import kk.uer.kk_config as kkc
-import kk.uer.layers.kk_linear as kkl
-import kk.uer.layers.kk_transformer as kkt
-import kk.uer.layers.kk_cross_attention as kkca
-import kk.uer.layers.kk_selfattention as kksa
+import kk.lm.kk_app as kka
+import kk.lm.kk_base as kkb
+import kk.lm.kk_config as kkc
+import kk.lm.layers.kk_linear as kkl
+import kk.lm.layers.kk_transformer as kkt
+import kk.lm.layers.kk_cross_attention as kkca
+import kk.lm.layers.kk_selfattention as kksa
 
 
 class RBModel(kka.KkAppModel):
@@ -19,6 +19,8 @@ class RBModel(kka.KkAppModel):
         context = torch.zeros((1, self.c_feathers), dtype=torch.float32)
         self.register_buffer("context", context)
 
+        self.cast_net = kkl.KkConditionLinear(self.a_feathers, self.a_feathers,)
+
         # self.c_net = kkca.KkCrossAttention(self.c_feathers, self.in_feathers,
         #                                    out_length=self.o_feathers)
         self.c_net = kksa.KkMultiSelfAttention(self.a_feathers, self.a_feathers,
@@ -29,6 +31,7 @@ class RBModel(kka.KkAppModel):
     def forward(self, x):
         _context = self.context.expand(x.size(0), -1)
         o = torch.concatenate((_context, x), dim=-1)
+        o = self.cast_net(o)
         o = self.c_net(o, o, o)
         o = self.classifier(o)
         o = torch.squeeze(o, dim=-1)
@@ -59,5 +62,5 @@ class RbClassfierLoss(kka.KkClassfierLoss):
         super(RbClassfierLoss, self).__init__(lossFn=lossFn, blocks=blocks, counts=counts, diffOnly=diffOnly)
 
     def f_after(self, o, y, loss):
-        loss = loss + torch.std(o) * 2000.0
+        loss = loss - torch.std(o) * 2000.0
         return loss

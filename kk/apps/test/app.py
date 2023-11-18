@@ -7,8 +7,8 @@ import torch.nn as nn
 import logging as log
 import tqdm
 import kk.apps.test.models as models
-import kk.apps.kk_app as kka
-import kk.uer.kk_config as kkc
+import kk.lm.kk_app as kka
+import kk.lm.kk_config as kkc
 
 
 def test_simple():

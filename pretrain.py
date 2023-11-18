@@ -15,7 +15,7 @@ def main():
                         help="Path of the pretrained model.")
     parser.add_argument("--output_model_path", type=str, required=True,
                         help="Path of the output model.")
-    parser.add_argument("--config_path", type=str, default="uer/bert/base_config.json",
+    parser.add_argument("--config_path", type=str, default="lm/bert/base_config.json",
                         help="Config file of model hyper-parameters.")
 
     # Training and saving options.
@@ -47,7 +47,7 @@ def main():
                         help="The data processor of the pretraining model.")
     parser.add_argument("--deep_init", action="store_true",
                         help="Scaling initialization of projection layers by a "
-                             "factor of 1/sqrt(2N). Necessary to large uer.")
+                             "factor of 1/sqrt(2N). Necessary to large lm.")
 
     # Masking options.
     parser.add_argument("--whole_word_masking", action="store_true", help="Whole word masking.")

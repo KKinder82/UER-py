@@ -91,7 +91,7 @@ def finetune_opts(parser):
     # Path options.
     parser.add_argument("--pretrained_model_path", default=None, type=str,
                         help="Path of the pretrained model.")
-    parser.add_argument("--output_model_path", default="uer/finetuned_model.bin", type=str,
+    parser.add_argument("--output_model_path", default="lm/finetuned_model.bin", type=str,
                         help="Path of the output model.")
     parser.add_argument("--train_path", type=str, required=True,
                         help="Path of the trainset.")
@@ -99,7 +99,7 @@ def finetune_opts(parser):
                         help="Path of the devset.")
     parser.add_argument("--test_path", default=None, type=str,
                         help="Path of the testset.")
-    parser.add_argument("--config_path", default="uer/bert/base_config.json", type=str,
+    parser.add_argument("--config_path", default="lm/bert/base_config.json", type=str,
                         help="Path of the config file.")
 
     # Model options.
@@ -169,10 +169,10 @@ def tgt_tokenizer_opts(parser):
 def deepspeed_opts(parser):
     parser.add_argument("--deepspeed", action="store_true",
                         help=".")
-    parser.add_argument("--deepspeed_config", default="uer/deepspeed_config.json", type=str,
+    parser.add_argument("--deepspeed_config", default="lm/deepspeed_config.json", type=str,
                         help=".")
     parser.add_argument("--deepspeed_checkpoint_activations", action='store_true',
-                        help="Checkpoint activation to allow for training with larger uer, sequences, and batch sizes.")
+                        help="Checkpoint activation to allow for training with larger lm, sequences, and batch sizes.")
     parser.add_argument("--deepspeed_checkpoint_layers_num", type=int, default=1,
                         help="chunk size (number of layers) for checkpointing.")
     parser.add_argument("--local_rank", type=int, required=False)

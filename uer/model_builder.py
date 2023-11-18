@@ -7,9 +7,9 @@ from uer.models.model import Model
 
 def build_model(args):
     """
-    Build universial encoder representations uer.
+    Build universial encoder representations lm.
     The combinations of different embedding, encoder,
-    and target layers yield pretrained uer of different
+    and target layers yield pretrained lm of different
     properties.
     We could select suitable one for downstream tasks.
     """

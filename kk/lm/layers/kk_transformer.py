@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import kk.apps.kk_app as kka
-import kk.uer.kk_base as kkb
-import kk.uer.kk_config as kkc
-import kk.uer.layers.kk_selfattention as kksa
-import kk.uer.layers.kk_linear as kkl
+import kk.lm.kk_app as kka
+import kk.lm.kk_base as kkb
+import kk.lm.kk_config as kkc
+import kk.lm.layers.kk_selfattention as kksa
+import kk.lm.layers.kk_linear as kkl
 import math
 
 

@@ -1,6 +1,6 @@
 
 import torch.nn as nn
-import kk.uer.kk_base as kkb
+import kk.lm.kk_base as kkb
 
 
 class NumInferModel(kkb.KkModule):

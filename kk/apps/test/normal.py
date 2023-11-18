@@ -6,7 +6,7 @@ import torch.utils.data as data
 import torch.nn as nn
 import logging as log
 import tqdm
-import kk.uer.kk_config as kkc
+import kk.lm.kk_config as kkc
 
 class TestModel(nn.Module):
     def __init__(self):

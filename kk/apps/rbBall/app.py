@@ -3,8 +3,8 @@ import os
 import torch
 import torch.nn as nn
 import kk.apps.rbBall.models as models
-import kk.apps.kk_app as kka
-import kk.uer.kk_config as kkc
+import kk.lm.kk_app as kka
+import kk.lm.kk_config as kkc
 import kk.kk_utils as kku
 import kk.kk_datetime as kkdt
 import torch.utils.data as data

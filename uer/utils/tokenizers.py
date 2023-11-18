@@ -570,8 +570,8 @@ class BasicTokenizer(object):
         text = self._clean_text(text)
 
         # This was added on November 1st, 2018 for the multilingual and Chinese
-        # uer. This is also applied to the English uer now, but it doesn't
-        # matter since the English uer were not trained on any Chinese data
+        # lm. This is also applied to the English lm now, but it doesn't
+        # matter since the English lm were not trained on any Chinese data
         # and generally don't have any Chinese data in them (there are Chinese
         # characters in the vocabulary because Wikipedia does have some Chinese
         # words in the English Wikipedia.).

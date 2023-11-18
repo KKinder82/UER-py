@@ -16,9 +16,9 @@ import math
 import tqdm
 import kk.kk_utils as kku
 import random
-import kk.uer.kk_config as kkc
-import kk.uer.kk_base as kkb
-import kk.uer.layers.kk_linear as kkl
+import kk.lm.kk_config as kkc
+import kk.lm.kk_base as kkb
+import kk.lm.layers.kk_linear as kkl
 import warnings
 
 
@@ -115,7 +115,9 @@ class KkLossLog(object):
         def __init__(self):
             self.loss = 0
             self.perc = 0
-            self.best = None  # 根据 loss 计算的最佳值
+            self.best_save = None  # 用于保存时使用
+            self.best_loss = None
+            self.best_perc = None
             self.add_times = 0
             self.update_times = 0
 
@@ -125,24 +127,40 @@ class KkLossLog(object):
         def to_tuple2(self):
             return self.loss, self.perc
 
+        def update_best(self):
+            if self.best_loss is None:
+                self.best_loss = self.loss
+            elif self.best_loss > self.loss:
+                self.best_loss = self.loss
+
+            if self.best_perc is None:
+                self.best_perc = self.perc
+            elif self.best_perc < self.perc:
+                self.best_perc = self.perc
+
         def update(self, loss, perc):
             self.loss = loss
             self.perc = perc
-            # self.add_times = 0
+
+            self.update_best()
+
             self.update_times += 1
 
         def update_kkloss(self, kkloss):
             return self.update(kkloss.loss, kkloss.perc)
 
-        def replace(self, loss, perc, best=None, add_times=0, update_times=0):
+        def replace(self, loss, perc, best_save=None, best_loss=None, best_perc=None, add_times=0, update_times=0):
             self.loss = loss
             self.perc = perc
-            self.best = best
+            self.best_save = best_save
+            self.best_loss = best_loss
+            self.best_perc = best_perc
             self.add_times = add_times
             self.update_times = update_times
 
         def replace_kkloss(self, kkloss):
-            self.replace(kkloss.loss, kkloss.perc, kkloss.best,
+            self.replace(kkloss.loss, kkloss.perc,
+                         kkloss.best_save, kkloss.best_loss, kkloss.best_perc,
                          kkloss.add_times, kkloss.update_times)
 
         def add(self, loss, perc):
@@ -150,19 +168,23 @@ class KkLossLog(object):
             self.perc = (self.add_times / (self.add_times + 1)) * self.perc + perc / (self.add_times + 1)
             self.add_times += 1
 
+            self.update_best()
+
         def reset(self):
             self.loss = 0
             self.perc = 0
-            self.best = None
+            self.best_save = None  # 用于保存时使用
+            self.best_loss = None
+            self.best_perc = None
             self.add_times = 0
             self.update_times = 0
 
         def is_best(self):
-            if self.best is None:
-                self.best = self.loss
+            if self.best_save is None:
+                self.best_save = self.loss
                 return True
-            elif self.loss < self.best:
-                self.best = self.loss
+            elif self.loss < self.best_save:
+                self.best_save = self.loss
                 return True
             return False
 
@@ -173,25 +195,15 @@ class KkLossLog(object):
             loss2 = kkloss.loss
             perc2 = kkloss.perc
 
-            if loss1 == 0:
-                _loss_diff = loss2 - loss1
-                _loss_p_text = f" ****       "
-            else:
-                _loss_diff = loss2 - loss1
-                _loss_p = _loss_diff / loss1 * 100
-                _loss_text = kku.kk_num101(_loss_diff, "-  ", "*  ", "+  ")
-                _loss_p = abs(_loss_p)
-                _loss_p_text = f"{_loss_text} {_loss_p:>10g}%"
+            _loss_diff = loss2 - loss1
+            _loss_text = kku.kk_num101(_loss_diff, "-  ", "*  ", "+  ")
+            _loss_p = abs(_loss_diff)
+            _loss_p_text = f"{_loss_text} {_loss_p:>10g} "
 
-            if perc1 == 0:
-                _perc_diff = perc2 - perc1
-                _perc_p_text = f" ****       "
-            else:
-                _perc_diff = perc2 - perc1
-                _perc_p = _perc_diff / perc1 * 100
-                _perc_text = kku.kk_num101(_perc_diff, "- ", "* ", "+ ")
-                _perc_p = abs(_perc_p)
-                _perc_p_text = f"{_perc_text} {_perc_p:>10g}%"
+            _perc_diff = perc2 - perc1
+            _perc_text = kku.kk_num101(_perc_diff, "- ", "* ", "+ ")
+            _perc_p = abs(_perc_diff)
+            _perc_p_text = f"{_perc_text} {_perc_p:>10g}%"
 
             all_text = "loss( {} ): {:>10g} | perc( {} ): {:>10g} % ".format(_loss_p_text, loss2, _perc_p_text, perc2)
             return _loss_diff, _perc_diff, _loss_p_text, _perc_p_text, all_text
@@ -847,10 +859,11 @@ class KkTrain(KkApp):
 
         print("\n  >> 验证信息: RANK:{}/{}, epoch {}/{} "
               .format(config.rank + 1, config.gpu_count, iepoch + 1, config.epoch))
-        print("        val_loss ( {} ) : {:<10g} : {}".format(_loss[2],
+        print("        val_loss ( {} ) : {:<10g}   : {}".format(_loss[2],
                                                               self.loss.val_loss_this.loss,
-                                                              self.loss.val_loss_this.best))
-        print("        val_perc ( {} ) : {:<10g}%".format(_loss[3], self.loss.val_loss_this.perc))
+                                                              self.loss.val_loss_this.best_loss))
+        print("        val_perc ( {} ) : {:<10g}%  : {}".format(_loss[3], self.loss.val_loss_this.perc,
+                                                                self.loss.val_loss_this.best_perc))
 
     def _val_batch(self, *, iepoch, ibatch, x, y):
         with torch.no_grad():
@@ -939,8 +952,8 @@ class KkTrain(KkApp):
                                  config.batch_count, config.world_size))
                 _loss_sign = "(*)"
                 print("          loss : {0:<26}  |   perc : {1:<26}"
-                      .format(("(*)" if self.loss.val_loss_this.best is None else self.loss.val_loss_this.loss),
-                              ("(*)" if self.loss.val_loss_this.best is None else self.loss.val_loss_this.perc)))
+                      .format(("(*)" if self.loss.val_loss_this.best_loss is None else self.loss.val_loss_this.best_loss),
+                              ("(*)" if self.loss.val_loss_this.best_perc is None else self.loss.val_loss_this.best_perc)))
 
             for iepoch in range(config.epoch):
                 print("\n|------ [ Epoch {} / {} ] :  rank : {}  |  world_size : {} -----------------------------"

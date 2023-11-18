@@ -212,7 +212,7 @@ def main():
     finetune_opts(parser)
 
     parser.add_argument("--prompt_id", type=str, default="chnsenticorp_char")
-    parser.add_argument("--prompt_path", type=str, default="uer/prompts.json")
+    parser.add_argument("--prompt_path", type=str, default="lm/prompts.json")
 
     args = parser.parse_args()
 

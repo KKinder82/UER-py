@@ -4,13 +4,13 @@ import torch.nn as nn
 import torch.utils.data as torchdata
 import numpy as np
 import kk.kk_utils as kku
-import kk.apps.kk_app as kka
-import kk.uer.kk_base as kkb
+import kk.lm.kk_app as kka
+import kk.lm.kk_base as kkb
 from torch.nn.parallel import DistributedDataParallel as DDP
-import kk.uer.layers.kk_linear as kkl
-import kk.uer.layers.kk_transformer as kkt
-import kk.uer.layers.kk_selfattention as kksa
-import kk.uer.kk_config as kkc
+import kk.lm.layers.kk_linear as kkl
+import kk.lm.layers.kk_transformer as kkt
+import kk.lm.layers.kk_selfattention as kksa
+import kk.lm.kk_config as kkc
 
 
 class KkTestModel(kka.KkAppModel):

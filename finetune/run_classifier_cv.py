@@ -27,11 +27,11 @@ def main():
     # Path options.
     parser.add_argument("--pretrained_model_path", default=None, type=str,
                         help="Path of the pretrained model.")
-    parser.add_argument("--output_model_path", default="uer/classifier_model.bin", type=str,
+    parser.add_argument("--output_model_path", default="lm/classifier_model.bin", type=str,
                         help="Path of the output model.")
     parser.add_argument("--train_path", type=str, required=True,
                         help="Path of the trainset.")
-    parser.add_argument("--config_path", default="uer/bert/base_config.json", type=str,
+    parser.add_argument("--config_path", default="lm/bert/base_config.json", type=str,
                         help="Path of the config file.")
     parser.add_argument("--train_features_path", type=str, required=True,
                         help="Path of the train features for stacking.")

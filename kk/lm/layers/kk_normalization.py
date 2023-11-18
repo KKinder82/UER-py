@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-import kk.uer.kk_base as kkb
-import kk.uer.kk_config as kkc
+import kk.lm.kk_base as kkb
+import kk.lm.kk_config as kkc
 
 
 def get_normalization(normalization: str, groups: int = 2):

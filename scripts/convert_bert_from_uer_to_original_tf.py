@@ -23,9 +23,9 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--layers_num", type=int, default=12,
                         help=".")
-    parser.add_argument("--input_model_path", type=str, default="uer/input_model.bin",
+    parser.add_argument("--input_model_path", type=str, default="lm/input_model.bin",
                         help=".")
-    parser.add_argument("--output_model_path", type=str, default="uer/output_model.ckpt",
+    parser.add_argument("--output_model_path", type=str, default="lm/output_model.ckpt",
                         help=".")
     parser.add_argument("--type", choices=["bert", "mlm"], default="bert",
                         help="The training target of the pretraining model.")

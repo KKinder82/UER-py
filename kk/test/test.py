@@ -9,10 +9,10 @@ from torch.optim.lr_scheduler import LambdaLR
 import copy
 import argparse
 from argparse import Namespace
-# from uer.layers.cross_layers import CrossVector
+# from lm.layers.cross_layers import CrossVector
 # from kk.utils import *
 import sentencepiece as spm
-# from uer.utils.tokenizers import *
+# from lm.utils.tokenizers import *
 import random
 import numpy as np
 import kk.kk_utils as kku
@@ -650,10 +650,10 @@ def main():
     # print(cv(a))
     # exit()
     #
-    # args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "uer/google_zh_vocab.txt", "token_len":50}
-    # args = {"spm_model_path": r"", "vocab_path": "uer/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
-    # args = {"spm_model_path": r"", "vocab_path": "uer/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}
-    # args = {"spm_model_path": r"", "vocab_path": "uer/kk_zh_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = {"spm_model_path": r"E:\Data\AiModel\chatglm-6b\ice_text.model", "vocab_path": "lm/google_zh_vocab.txt", "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "lm/google_zh_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "lm/chatGLM6_vocab.txt", "do_lower_case":True, "token_len":50}
+    # args = {"spm_model_path": r"", "vocab_path": "lm/kk_zh_vocab.txt", "do_lower_case":True, "token_len":50}
     # args = Namespace(**args)
     # # token = KKTokenizer(args)
     # token = KKTokenizer(args)
