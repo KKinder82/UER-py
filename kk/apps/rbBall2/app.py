@@ -14,12 +14,12 @@ import torch.utils.data.distributed as dist_data
 def train():
     _path = os.path.dirname(os.path.abspath(__file__))
     config = kkc.KkmConfig(_path)
-    config.batch_size = 1
+    config.batch_size = 10
     model = models.RBModel()
     dataset = kka.KkDataset(path_np="data/rbBall_train.npy", x_len=88)
     dataset_val = kka.KkDataset(path_np="data/rbBall_val.npy", x_len=88)
     loss_fun = models.RbClassfierLoss()
-    optim = torch.optim.Adam(model.parameters(), lr=0.001)
+    optim = torch.optim.Adam(model.parameters(), lr=0.0005)
 
     trainer = kka.KkTrain(model=model, dataset=dataset, dataset_val=dataset_val,
                           loss_fn=loss_fun, optim=optim)
