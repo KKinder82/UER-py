@@ -38,6 +38,57 @@ def kk_gen():
 
 
 def main():
+    # Tensor 索引
+    o = torch.arange(9).reshape(3, 3)
+    print(o)
+    i = torch.tensor([1, 1])
+    # i = [[1, 1], [2, 2]]
+    j = torch.tensor([2, 1])
+    print(o[i, 1:])
+    exit(0)
+
+    i = [1, 2]  # 选择第1，2行的所有元素
+    print(o[i])
+
+    i = [[1, 2], [0, 2]]  # 选择第1行0列，2行2列的2个元素
+    print(o[i])
+
+    i = torch.tensor([1, 2])
+    print(o[i])
+
+    i = torch.tensor([[[1, 2]]])  # 按行选每一行的所有元素，再组成 2 * 4 * N 的 Tensor
+    print(o[i])
+
+    i = torch.tensor([[1, 1, 1, 1], [1, 0, 2, 2]])  # 按行选每一行的所有元素，再组成 2 * 4 * N 的 Tensor
+    print(o[i])
+
+    i = torch.tensor([1, 2, 2, 0, 0])  # 按行选每一行的所有元素，再组成Tensor
+    print(o[i])
+
+    i = torch.tensor([True, True, False])  # 按行选每一行的所有元素，再组成Tensor
+    print(o[i])
+    i = torch.tensor([[True, True, False], [True, True, False], [True, True, False]])  # 按元素选择，组成一维Tensor
+    print(o[i])
+    # i = torch.tensor([[False, True, False]])  # Error
+    # print(o[i])
+    # i = torch.tensor([[False, True, False], [False, True, True]])  # Error
+    # print(o[i])
+
+    i = [True, True, False]  # list 按行选每一行的所有元素： 选择第一行，第二行， 前面维数必须一致 （行数与原tensor相同）
+    print(o[i])
+    i = [[True, True, False]]  # list 按行选每一行的所有元素： 选择第一行，第二行， ， 前面维数必须一致 （行数与原tensor相同）
+    print(o[i])
+    i = [[False, True, False], [False, True, True]]  # list 选按行选，再按列选： 选择第2行，再选择第2、3列 （行、列数与原tensor相同）
+    print(o[i])
+
+    exit(0)
+
+
+    a = torch.arange(10).view(2, -1)
+    a[:, [2, 3]] += 1
+    print(a)
+    exit(0)
+
     i = 2
     if 0 < i < 3:
         print("OK")
@@ -211,9 +262,6 @@ def main():
     print(o[i])
 
     i = torch.tensor([[[1, 2]]])  # 按行选每一行的所有元素，再组成 2 * 4 * N 的 Tensor
-    print(o[i])
-
-    i = torch.tensor([[1, 1, 1, 1], [1, 0, 2, 2]])  # 按行选每一行的所有元素，再组成 2 * 4 * N 的 Tensor
     print(o[i])
 
     i = torch.tensor([[1, 1, 1, 1], [1, 0, 2, 2]])  # 按行选每一行的所有元素，再组成 2 * 4 * N 的 Tensor

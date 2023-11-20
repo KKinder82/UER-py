@@ -19,15 +19,11 @@ def get_normalization(normalization: str, groups: int = 2):
 
 class KkNormalization(kkb.KkModule):
     def __init__(self, *,
-                 mean: float = 0, std: float = 1, eps: float = 1e-5, adapt: bool = True):
+                 mean: float = 0, std: float = 1, eps: float = 1e-5):
         super(KkNormalization, self).__init__()
         self.eps = eps
-        if adapt:
-            self.normalization_mean = nn.Parameter(torch.tensor(mean, dtype=torch.float32))
-            self.normalization_std = nn.Parameter(torch.tensor(std, dtype=torch.float32))
-        else:
-            self.normalization_mean = mean
-            self.normalization_std = std
+        self.normalization_mean = mean
+        self.normalization_std = std
 
     def forward(self, x):
         # x = x.type(torch.float64)

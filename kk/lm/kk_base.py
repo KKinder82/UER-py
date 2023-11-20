@@ -80,7 +80,7 @@ def get_randn_parameter(*shape, mean=0.0, std: (str, float) = 0.01):
 
 
 def get_constant_parameter(*shape, value: int = 1):
-    return torch.full_like(shape, value, dtype=torch.float32, requires_grad=True)
+    return torch.full(shape, value, dtype=torch.float32, requires_grad=True)
 
 
 class KkModule(nn.Module):

@@ -25,6 +25,15 @@ def kk_env_value(name: str, default: str = ""):
     return default
 
 
+def kk_norm_min_max(x, min_, max_, min_range=0, max_range=1):
+    return (x - min_) / (max_ - min_) * (max_range - min_range) + min_range
+
+
+def kk_norm_std(x, axis=-1):
+    mean = x.mean(-1, keepdim=True)
+    std = x.std(-1, keepdim=True)
+    return (x - mean) / std
+
 def kk_load_argsconfig(file: str):
     if not os.path.exists(file):
         return []

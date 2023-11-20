@@ -51,32 +51,43 @@ class KkLinear(kkb.KkModule):
                  normalization: str = "none"):
         super(KkLinear, self).__init__()
         self.tradition = tradition
+        self.Norm = kkn.get_normalization(normalization)
         if self.tradition:
             weight = kkb.get_randn_parameter(in_feathers, out_feathers, std=init_std)
             self.weight = nn.Parameter(weight)
-            bias = kkb.get_randn_parameter(1, out_feathers, std=init_std)
-            self.bias = nn.Parameter(bias)
+            if self.Norm is not None:
+                # bias = torch.zeros(1, out_feathers, dtype=torch.float32)
+                bias = kkb.get_randn_parameter(1, out_feathers, std=init_std)
+                self.bias = nn.Parameter(bias)
         else:
             inner_feather = math.ceil(100 / in_feathers)
             # perc_weights = torch.randn(in_feathers, inner_feather, dtype=torch.float32) * 10
-            perc_weights = kkb.get_randn_parameter(in_feathers, inner_feather, std="kk")
-            self.register_buffer("perc_weights", perc_weights)
+            # perc_weights = kkb.get_randn_parameter(in_feathers, inner_feather, std="kk")
+            # self.register_buffer("perc_weights", perc_weights)
 
-            weight = kkb.get_randn_parameter(inner_feather, out_feathers, std=init_std)
+            weight = kkb.get_randn_parameter(in_feathers, out_feathers, std=init_std)
             self.weight = nn.Parameter(weight)
-            bias = kkb.get_randn_parameter(1, out_feathers, std=init_std)
-            self.bias = nn.Parameter(bias)
-
-        self.Norm = kkn.get_normalization(normalization)
+            if init_std == "kk":
+                bias = torch.zeros(1, out_feathers, dtype=torch.float32)
+            if self.Norm is None:
+                bias = kkb.get_randn_parameter(1, out_feathers, std=init_std)
+                self.bias = nn.Parameter(bias)
 
     def forward(self, x):
         if self.tradition:
-            o = torch.matmul(x, self.weight) + self.bias
+            if self.Norm is None:
+                o = torch.matmul(x, self.weight) + self.bias
+            else:
+                o = torch.matmul(x, self.weight)
+                o = self.Norm(o)
         else:
-            o = torch.matmul(x, self.perc_weights)
-            o = torch.matmul(o, self.weight) + self.bias
-        if self.Norm is not None:
-            o = self.Norm(o)
+            if self.Norm is None:
+                _w = kku.kk_norm_std(self.weight)
+                o = torch.matmul(x, _w) + self.bias
+            else:
+                _w = kku.kk_norm_std(self.weight)
+                o = torch.matmul(x, _w)
+                o = self.Norm(o)
         return o
 
 
@@ -115,9 +126,9 @@ class KkClassifierLayer(kkb.KkModule):
     def __init__(self, in_feathers: int, classes: int, *,
                  one_formal: str = "softmax", inner_feathers: int = 128, loops: int = 0):
         super(KkClassifierLayer, self).__init__()
-        self.FFN0 = nn.Sequential(KkLinear(in_feathers, inner_feathers), nn.ReLU())
+        self.FFN0 = nn.Sequential(KkLinear(in_feathers, inner_feathers), nn.Tanh())
         self.FFNx = nn.ModuleList([nn.Sequential(KkLinear(inner_feathers, inner_feathers),
-                                                 nn.ReLU()) for _ in range(loops)])
+                                                 nn.Tanh()) for _ in range(loops)])
         self.FFN9 = KkLinear(inner_feathers, classes)
 
         if one_formal == "sigmoid":
@@ -130,7 +141,7 @@ class KkClassifierLayer(kkb.KkModule):
         last_o = o
         for ffn in self.FFNx:
             _o = ffn(o)
-            o += _o + last_o
+            o = _o + last_o
             last_o = _o
         o = self.FFN9(o)
         return self.Norm(o)

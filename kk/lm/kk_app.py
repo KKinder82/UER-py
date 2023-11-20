@@ -22,16 +22,22 @@ import kk.lm.layers.kk_linear as kkl
 import warnings
 
 
-class KkSigmoid(kkb.KkModule):
-    def __init__(self, config: kkc.KkmConfig, factor: float = 1.0):
-        super(KkLoss, self).__init__(config)
-        # self.factor = self.register_buffer("kk_factor", torch.tensor(factor))
-        self.factor = self.register_parameter("kk_factor", torch.tensor(factor))
+class KkSigmoid(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        result = 1 / (1 + torch.exp(-x))
+        ctx.save_for_backward(result)
+        return result
 
-    def forward(self, x):
-        o = 1 / ((0 - x / self.factor).exp() + 1)
-        return 0
+    @staticmethod
+    def backward(ctx, grad_output):
+        result, = ctx.saved_tensors
+        return result * (1 - result) * grad_output
 
+
+class KkParamters(torch.nn.Parameter):
+    def __init__(self, data=None, requires_grad=True):
+        super(KkParamters, self).__init__(data, requires_grad)
 
 class KkLoss(kkb.KkModule):
     def __init__(self):
@@ -82,7 +88,7 @@ class KkClassfierLoss(KkLoss):
             loss = self.lossFn(o[_f], y[_f])
         else:
             loss = self.lossFn(o, y)
-        loss = self.f_after(o, y, loss)
+        loss = self.forward_after(o, y, loss)
         # all_count = torch.sum(self.counts)  # y.count_nonzero()
         wrong_count2 = _f.count_nonzero()
         prec = 1 - (wrong_count2 / (all_count * 2 * y.size(0)))
@@ -90,7 +96,7 @@ class KkClassfierLoss(KkLoss):
             print("精度错误.")
         return loss, 0, prec.item()
 
-    def f_after(self, o, y, loss):
+    def forward_after(self, o, y, loss):
         return loss
 
 
@@ -655,15 +661,14 @@ class KkTrain(KkApp):
         _loss_value = 0
         loss = self.loss_fn(o, y)
         if isinstance(loss, tuple):
-            if isinstance(self.loss_fn, KkLoss):
-                if loss[1] == 0:
-                    _perc = loss[2]
-                    loss = loss[0]
-                else:
-                    raise RuntimeError(" KkLoss 返回值错误。")
+            if loss[1] == 0:
+                _perc = loss[2]
+                loss = loss[0]
+            else:
+                raise RuntimeError(" KkLoss 返回值错误。")
         else:
             _perc = loss.item()
-        return loss, _perc * 100
+        return loss, _perc
 
     def _optim(self, *, ibatch: int, loss):
         config = kkc.KkmConfig.config

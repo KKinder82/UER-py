@@ -87,7 +87,7 @@ def test():
     # dataset_val = kka.KkDataset(config, data=_data, x_len=88)
 
     model = models.RBModel()
-    loss_fn = kka.KkExtendLoss(lossFn=nn.MSELoss())
+    loss_fn = kka.KkExtendLoss(lossFn=nn.BCELoss())
     optim = torch.optim.Adam(model.parameters(), lr=0.1)
     trainer = kka.KkTrain(model=model, dataset=dataset, dataset_val=dataset_val,
                           loss_fn=loss_fn, optim=optim)

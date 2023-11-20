@@ -70,14 +70,14 @@ class KkmConfig(object):
                                                    # layer_optim_finished : 优化结束标志
         self.sys_param_check_loops = 0             # 网络参数检查 次数
 
-        self.lr_scheduler_warmup_steps = 20
+        self.lr_scheduler_warmup_steps = 50
         self.lr_scheduler_warmup_fn = lambda steps, last_lr, base_lr: (steps // 2 * 0.005) + 0.0001
-        self.lr_scheduler_updown_times = 6
+        self.lr_scheduler_updown_times = 10
         self.lr_scheduler_updown_fn = lambda times, last_lr, base_lr: last_lr * 0.5
-        self.lr_scheduler_down_times = 5
+        self.lr_scheduler_down_times = 30
         self.lr_scheduler_down_fn = lambda steps, last_lr, base_lr: last_lr * 1.6
-        self.lr_scheduler_equal_times = 10
-        self.lr_scheduler_equal_fn = lambda steps, last_lr, base_lr: last_lr * 1.5
+        self.lr_scheduler_equal_times = 30
+        self.lr_scheduler_equal_fn = lambda steps, last_lr, base_lr: last_lr * 0.6
 
 
         # 模型加载
